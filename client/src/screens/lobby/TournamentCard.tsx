@@ -72,8 +72,8 @@ export function TournamentCard({ user, onEnterTournament }: Props) {
     <div className="tournament-card">
       <div className="lobby-section-title">Daily Tournament</div>
       <div className="lobby-hint">
-        Once a day, {info.maxSeats} players face off for ⭐{info.buyIn} each. The winner takes a real Telegram gift
-        worth 50% of the prize pool (~⭐{prize} today). Too few players by start time and everyone gets refunded.
+        Once a day, {info.maxSeats} players face off for ⭐{info.buyIn} each. The winner takes real Telegram gifts
+        worth 50-55% of the prize pool (~⭐{prize} today). Too few players by start time and everyone gets refunded.
       </div>
 
       {info.status === 'running' ? (
@@ -106,7 +106,7 @@ export function TournamentCard({ user, onEnterTournament }: Props) {
       {info.lastResult && (
         <div className="prize-banner">
           🎁 Yesterday's winner: <strong>{info.lastResult.displayName}</strong>
-          {info.lastResult.starCount ? ` — a ⭐${info.lastResult.starCount} gift` : ''} from a ⭐{info.lastResult.prizePool} pool.
+          {info.lastResult.starCount ? ` — ⭐${info.lastResult.starCount} in gifts` : ''} from a ⭐{info.lastResult.prizePool} pool.
         </div>
       )}
     </div>

@@ -15,10 +15,10 @@ export function LeaderboardTab({ user, leaderboard, statusTiers, onEnterTourname
       <TournamentCard user={user} onEnterTournament={onEnterTournament} />
 
       <div className="lobby-section-title">Weekly Leaderboard</div>
-      <div className="lobby-hint">Top player each week wins a real Telegram gift worth ~50% of the Stars purchased this week, sent by the bot.</div>
+      <div className="lobby-hint">Top player each week wins real Telegram gifts worth ~50-55% of the Stars purchased this week, sent by the bot.</div>
       {leaderboard.lastPrize && (
         <div className="prize-banner">
-          🎁 Last week's winner: <strong>{leaderboard.lastPrize.displayName}</strong> — a ⭐{leaderboard.lastPrize.starCount} gift for +
+          🎁 Last week's winner: <strong>{leaderboard.lastPrize.displayName}</strong> — ⭐{leaderboard.lastPrize.starCount} in gifts for +
           {leaderboard.lastPrize.netWinnings} net winnings
         </div>
       )}

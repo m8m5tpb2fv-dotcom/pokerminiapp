@@ -143,7 +143,8 @@ describe('finishTournament', () => {
 
     await scheduler.finishTournament(fakeTableManager, 'fake-token');
 
-    // prize pool = 3 seats * 50 buy-in = 150; target = 50% = 75 -> priciest affordable is 'small' (50)
+    // prize pool = 3 seats * 50 buy-in = 150; target range = 50-55% = 75-82 -> priciest affordable is 'small' (50)
+    expect(telegram.sendGift).toHaveBeenCalledTimes(1);
     expect(telegram.sendGift).toHaveBeenCalledWith('fake-token', expect.objectContaining({ userId: 50, giftId: 'small' }));
     expect(fakeTable.standUp).toHaveBeenCalledTimes(3);
     expect(db.getBalance(50)).toBe(balanceBefore + 450);
@@ -174,5 +175,37 @@ describe('finishTournament', () => {
 
     expect(telegram.sendGift).not.toHaveBeenCalled();
     expect(tdb.getLastTournamentResult()).toMatchObject({ telegramId: 60, giftId: null, starCount: null });
+  });
+
+  it('sends a multi-gift bundle when no single catalog gift covers the target', async () => {
+    makePlayer(70, 'winner3');
+    const fakeTable = {
+      getView: () => ({
+        seats: [
+          { telegramId: 70, displayName: 'winner3', stack: 200, status: 'active' },
+          { telegramId: 71, displayName: 'loser1', stack: 0, status: 'sitting_out' },
+          { telegramId: 72, displayName: 'loser2', stack: 0, status: 'sitting_out' },
+          { telegramId: 73, displayName: 'loser3', stack: 0, status: 'sitting_out' },
+        ],
+      }),
+      standUp: vi.fn((telegramId: number) => (telegramId === 70 ? 200 : 0)),
+    };
+    const fakeTableManager = { getTable: () => fakeTable, markUnseated: vi.fn(), broadcast: vi.fn() } as unknown as Parameters<typeof scheduler.finishTournament>[0];
+
+    vi.mocked(telegram.getMyStarBalance).mockResolvedValue(1000);
+    vi.mocked(telegram.getAvailableGifts).mockResolvedValue([
+      { id: 'a', star_count: 60 },
+      { id: 'b', star_count: 40 },
+    ]);
+    vi.mocked(telegram.sendGift).mockClear();
+    vi.mocked(telegram.sendGift).mockResolvedValue(undefined);
+
+    await scheduler.finishTournament(fakeTableManager, 'fake-token');
+
+    // prize pool = 4 seats * 50 buy-in = 200; target range 100-110 -> 'a'(60) + 'b'(40) = 100
+    expect(telegram.sendGift).toHaveBeenCalledTimes(2);
+    expect(telegram.sendGift).toHaveBeenNthCalledWith(1, 'fake-token', expect.objectContaining({ userId: 70, giftId: 'a' }));
+    expect(telegram.sendGift).toHaveBeenNthCalledWith(2, 'fake-token', expect.objectContaining({ userId: 70, giftId: 'b' }));
+    expect(tdb.getLastTournamentResult()).toMatchObject({ telegramId: 70, giftId: 'a', starCount: 100, prizePool: 200, players: 4 });
   });
 });
