@@ -7,12 +7,23 @@ export interface User {
   telegramId: number;
   username: string | null;
   firstName: string | null;
+  nickname: string | null;
+  statusTier: string | null;
+  displayName: string;
   starsBalance: number;
+}
+
+export interface StatusTier {
+  id: string;
+  label: string;
+  price: number;
+  color: string;
 }
 
 export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
+  statusTier: string | null;
   netWinnings: number;
 }
 
@@ -30,6 +41,7 @@ export interface PublicSeatView {
   seatIndex: number;
   telegramId: number;
   displayName: string;
+  statusTier: string | null;
   stack: number;
   status: PlayerStatus;
   committedThisStreet: number;

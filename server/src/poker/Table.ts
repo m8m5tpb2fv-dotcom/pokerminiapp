@@ -65,7 +65,7 @@ export class Table {
     return [...this.seats.values()].find((s) => s.telegramId === telegramId);
   }
 
-  sitDown(seatIndex: number, telegramId: number, displayName: string, buyIn: number): void {
+  sitDown(seatIndex: number, telegramId: number, displayName: string, buyIn: number, statusTier: string | null = null): void {
     if (seatIndex < 0 || seatIndex >= this.config.maxSeats) throw new Error('Invalid seat');
     if (this.seats.has(seatIndex)) throw new Error('Seat taken');
     if (this.getSeat(telegramId)) throw new Error('Already seated');
@@ -74,6 +74,7 @@ export class Table {
       seatIndex,
       telegramId,
       displayName,
+      statusTier,
       stack: buyIn,
       status: 'active',
       holeCards: [],
@@ -411,6 +412,7 @@ export class Table {
         seatIndex: s.seatIndex,
         telegramId: s.telegramId,
         displayName: s.displayName,
+        statusTier: s.statusTier,
         stack: s.stack,
         status: s.status,
         committedThisStreet: s.committedThisStreet,

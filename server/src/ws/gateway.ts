@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
+import { adjustBalance, displayNameFor, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
 import type { ActionType } from '../poker/types.js';
 import type { TableManager } from '../tableManager.js';
 
@@ -18,6 +18,7 @@ interface ClientMessage {
 interface ConnState {
   telegramId: number | null;
   displayName: string;
+  statusTier: string | null;
   /** Table this socket is seated (playing) at, if any. */
   seatedTableId: string | null;
   /** Table this socket is currently viewing (lobby preview or the seated table). */
@@ -83,7 +84,13 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
   }
 
   wss.on('connection', (ws) => {
-    const state: ConnState = { telegramId: null, displayName: 'Player', seatedTableId: null, watchingTableId: null };
+    const state: ConnState = {
+      telegramId: null,
+      displayName: 'Player',
+      statusTier: null,
+      seatedTableId: null,
+      watchingTableId: null,
+    };
     states.set(ws, state);
 
     ws.on('message', (raw) => {
@@ -108,13 +115,17 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
             user = getOrCreateUser(user.telegram_id);
           }
           state.telegramId = user.telegram_id;
-          state.displayName = user.first_name ?? user.username ?? `Player ${user.telegram_id}`;
+          state.displayName = displayNameFor(user);
+          state.statusTier = user.status_tier;
           send(ws, {
             type: 'auth_ok',
             user: {
               telegramId: user.telegram_id,
               username: user.username,
               firstName: user.first_name,
+              nickname: user.nickname,
+              statusTier: user.status_tier,
+              displayName: state.displayName,
               starsBalance: user.stars_balance,
             },
           });
@@ -161,7 +172,7 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
           }
           adjustBalance(state.telegramId, -buyIn, 'buy_in');
           try {
-            table.sitDown(seatIndex, state.telegramId, state.displayName, buyIn);
+            table.sitDown(seatIndex, state.telegramId, state.displayName, buyIn, state.statusTier);
           } catch (err) {
             adjustBalance(state.telegramId, buyIn, 'buy_in_refund');
             send(ws, { type: 'error', message: (err as Error).message });

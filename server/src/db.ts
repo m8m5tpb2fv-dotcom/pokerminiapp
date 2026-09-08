@@ -13,6 +13,8 @@ db.exec(`
     telegram_id INTEGER PRIMARY KEY,
     username TEXT,
     first_name TEXT,
+    nickname TEXT,
+    status_tier TEXT,
     stars_balance INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -28,10 +30,17 @@ db.exec(`
   );
 `);
 
+// Lightweight migration for databases created before nickname/status_tier existed.
+const existingColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
+if (!existingColumns.has('nickname')) db.exec('ALTER TABLE users ADD COLUMN nickname TEXT');
+if (!existingColumns.has('status_tier')) db.exec('ALTER TABLE users ADD COLUMN status_tier TEXT');
+
 export interface UserRow {
   telegram_id: number;
   username: string | null;
   first_name: string | null;
+  nickname: string | null;
+  status_tier: string | null;
   stars_balance: number;
   created_at: string;
 }
@@ -50,6 +59,28 @@ export function getOrCreateUser(telegramId: number, username?: string, firstName
   return db.prepare('SELECT * FROM users WHERE telegram_id = ?').get(telegramId) as UserRow;
 }
 
+const NICKNAME_PATTERN = /^[a-zA-Z0-9_ ]{2,16}$/;
+
+export function isValidNickname(nickname: string): boolean {
+  return NICKNAME_PATTERN.test(nickname.trim());
+}
+
+export function setNickname(telegramId: number, nickname: string): UserRow {
+  const trimmed = nickname.trim();
+  if (!isValidNickname(trimmed)) throw new Error('Nickname must be 2-16 characters (letters, numbers, spaces, underscores)');
+  db.prepare('UPDATE users SET nickname = ? WHERE telegram_id = ?').run(trimmed, telegramId);
+  return db.prepare('SELECT * FROM users WHERE telegram_id = ?').get(telegramId) as UserRow;
+}
+
+export function setStatusTier(telegramId: number, statusTier: string): UserRow {
+  db.prepare('UPDATE users SET status_tier = ? WHERE telegram_id = ?').run(statusTier, telegramId);
+  return db.prepare('SELECT * FROM users WHERE telegram_id = ?').get(telegramId) as UserRow;
+}
+
+export function displayNameFor(user: Pick<UserRow, 'telegram_id' | 'username' | 'first_name' | 'nickname'>): string {
+  return user.nickname ?? user.username ?? user.first_name ?? `Player ${user.telegram_id}`;
+}
+
 export function getBalance(telegramId: number): number {
   const row = db.prepare('SELECT stars_balance FROM users WHERE telegram_id = ?').get(telegramId) as
     | { stars_balance: number }
@@ -66,6 +97,7 @@ export function grantDevStarterBalanceIfEmpty(telegramId: number, amount = 1000)
 export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
+  statusTier: string | null;
   netWinnings: number;
 }
 
@@ -78,7 +110,8 @@ export function getLeaderboard(limit = 20): LeaderboardEntry[] {
   const rows = db
     .prepare(
       `SELECT u.telegram_id as telegramId,
-              COALESCE(u.username, u.first_name, 'Player ' || u.telegram_id) as displayName,
+              COALESCE(u.nickname, u.username, u.first_name, 'Player ' || u.telegram_id) as displayName,
+              u.status_tier as statusTier,
               SUM(t.amount) as netWinnings
        FROM star_transactions t
        JOIN users u ON u.telegram_id = t.telegram_id
