@@ -4,7 +4,9 @@ import express from 'express';
 import http from 'node:http';
 import { authRouter } from './routes/auth.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
+import { nicknameRouter } from './routes/nickname.js';
 import { starsRouter, telegramWebhookRouter } from './routes/stars.js';
+import { statusesRouter } from './routes/statuses.js';
 import { tablesRouter } from './routes/tables.js';
 import { TableManager } from './tableManager.js';
 import { attachWebSocketServer } from './ws/gateway.js';
@@ -28,6 +30,8 @@ app.use('/api', starsRouter(BOT_TOKEN));
 app.use('/api', telegramWebhookRouter(BOT_TOKEN));
 app.use('/api', tablesRouter(tableManager));
 app.use('/api', leaderboardRouter());
+app.use('/api', nicknameRouter(BOT_TOKEN));
+app.use('/api', statusesRouter(BOT_TOKEN));
 
 const server = http.createServer(app);
 attachWebSocketServer(server, tableManager, BOT_TOKEN);

@@ -47,6 +47,11 @@ export class PokerSocket {
     else this.queue.push(data);
   }
 
+  /** Re-sends auth so the server refreshes its cached displayName/statusTier after a nickname or status change. */
+  reauth(): void {
+    this.send({ type: 'auth', initData: getInitData() });
+  }
+
   watchTable(tableId: string): void {
     this.send({ type: 'watch_table', tableId });
   }

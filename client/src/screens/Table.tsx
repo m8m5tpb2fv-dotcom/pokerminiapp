@@ -4,11 +4,12 @@ import { Seat } from '../components/Seat';
 import { ActionBar } from '../components/ActionBar';
 import { pokerSocket } from '../ws';
 import { haptic } from '../telegram';
-import type { ActionType, TableStateView, TableSummary, User } from '../types';
+import type { ActionType, StatusTier, TableStateView, TableSummary, User } from '../types';
 
 interface Props {
   summary: TableSummary;
   user: User;
+  statusTiers: StatusTier[];
   onBalanceChange: (delta: number) => void;
   onLeave: () => void;
 }
@@ -22,7 +23,7 @@ function seatPosition(seatIndex: number, maxSeats: number): { left: string; top:
   return { left: `${left}%`, top: `${top}%` };
 }
 
-export function TableScreen({ summary, user, onBalanceChange, onLeave }: Props) {
+export function TableScreen({ summary, user, statusTiers, onBalanceChange, onLeave }: Props) {
   const [view, setView] = useState<TableStateView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [buyInChoice, setBuyInChoice] = useState(summary.minBuyIn);
@@ -122,6 +123,7 @@ export function TableScreen({ summary, user, onBalanceChange, onLeave }: Props) 
                 isMe={seat?.telegramId === user.telegramId}
                 onSit={sit}
                 canSit={!mySeat && emptySeatIndexes.includes(seatIndex)}
+                statusTiers={statusTiers}
               />
             </div>
           );

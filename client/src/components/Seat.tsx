@@ -1,5 +1,6 @@
 import { Card, CardBack } from './Card';
-import type { PublicSeatView } from '../types';
+import { StatusBadge } from './StatusBadge';
+import type { PublicSeatView, StatusTier } from '../types';
 
 interface Props {
   seat: PublicSeatView | undefined;
@@ -9,9 +10,10 @@ interface Props {
   isMe: boolean;
   onSit: (seatIndex: number) => void;
   canSit: boolean;
+  statusTiers?: StatusTier[];
 }
 
-export function Seat({ seat, seatIndex, isButton, isToAct, isMe, onSit, canSit }: Props) {
+export function Seat({ seat, seatIndex, isButton, isToAct, isMe, onSit, canSit, statusTiers }: Props) {
   if (!seat) {
     return (
       <div className="seat seat-empty">
@@ -35,7 +37,15 @@ export function Seat({ seat, seatIndex, isButton, isToAct, isMe, onSit, canSit }
           : (seat.holeCards ?? []).map((c) => <Card key={c} code={c} />)}
       </div>
       <div className="seat-info">
-        <div className="seat-name">{seat.displayName}{isMe ? ' (you)' : ''}</div>
+        <div className="seat-name">
+          {seat.displayName}
+          {isMe ? ' (you)' : ''}
+        </div>
+        {seat.statusTier && (
+          <div className="seat-status-line">
+            <StatusBadge tierId={seat.statusTier} tiers={statusTiers} />
+          </div>
+        )}
         <div className="seat-stack">⭐ {seat.stack}</div>
         {seat.status === 'all_in' && <div className="seat-badge">ALL IN</div>}
         {seat.status === 'folded' && <div className="seat-badge">FOLD</div>}

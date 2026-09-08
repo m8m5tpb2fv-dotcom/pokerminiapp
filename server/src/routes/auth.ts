@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
+import { displayNameFor, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
 
 export function authRouter(botToken: string | undefined): Router {
   const router = Router();
@@ -21,6 +21,9 @@ export function authRouter(botToken: string | undefined): Router {
         telegramId: user.telegram_id,
         username: user.username,
         firstName: user.first_name,
+        nickname: user.nickname,
+        statusTier: user.status_tier,
+        displayName: displayNameFor(user),
         starsBalance: user.stars_balance,
       },
     });
