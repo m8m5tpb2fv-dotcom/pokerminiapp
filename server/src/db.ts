@@ -133,6 +133,13 @@ export function getOwnedStatusTiers(telegramId: number): string[] {
   return [...owned];
 }
 
+export function getAllRankedTelegramIds(): { telegramId: number; rankTier: string }[] {
+  return db.prepare('SELECT telegram_id as telegramId, rank_tier as rankTier FROM users WHERE rank_tier IS NOT NULL').all() as {
+    telegramId: number;
+    rankTier: string;
+  }[];
+}
+
 export function displayNameFor(user: Pick<UserRow, 'telegram_id' | 'username' | 'first_name' | 'nickname'>): string {
   return user.nickname ?? user.username ?? user.first_name ?? `Player ${user.telegram_id}`;
 }
