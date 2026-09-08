@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { uploadAvatar } from '../../api';
+import { purchaseStatus, uploadAvatar } from '../../api';
 import { Avatar } from '../../components/Avatar';
 import { StatusBadge } from '../../components/StatusBadge';
 import { pokerSocket } from '../../ws';
@@ -44,6 +44,22 @@ export function ProfileTab({ user, statusTiers, onUserChange, onEditNickname }: 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [switchingStatus, setSwitchingStatus] = useState<string | null>(null);
+
+  const ownedTiers = statusTiers.filter((t) => user.ownedStatusTiers.includes(t.id));
+
+  async function switchStatus(tierId: string): Promise<void> {
+    setSwitchingStatus(tierId);
+    setError(null);
+    try {
+      onUserChange(await purchaseStatus(tierId));
+      pokerSocket.reauth();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSwitchingStatus(null);
+    }
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
@@ -83,6 +99,30 @@ export function ProfileTab({ user, statusTiers, onUserChange, onEditNickname }: 
         {user.username && <div className="profile-username">@{user.username}</div>}
         {error && <div className="toast toast-error">{error}</div>}
       </div>
+
+      {ownedTiers.length > 0 && (
+        <div className="profile-status-switcher">
+          <div className="lobby-section-title">Your statuses</div>
+          <div className="lobby-hint">Switch between any status you own — free, as many times as you like.</div>
+          <div className="status-shop">
+            {ownedTiers.map((tier) => {
+              const isCurrent = user.statusTier === tier.id;
+              return (
+                <button
+                  key={tier.id}
+                  className={`status-shop-item ${!isCurrent ? 'status-shop-item-owned' : ''}`}
+                  style={{ borderColor: tier.color }}
+                  disabled={isCurrent || switchingStatus !== null}
+                  onClick={() => switchStatus(tier.id)}
+                >
+                  <span style={{ color: tier.color }}>{tier.label}</span>
+                  <span>{isCurrent ? 'Active' : 'Switch'}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="profile-info-list">
         <button className="profile-info-row profile-info-row-button" onClick={onEditNickname}>
