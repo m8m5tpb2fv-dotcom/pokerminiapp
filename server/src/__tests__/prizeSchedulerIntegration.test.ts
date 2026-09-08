@@ -83,12 +83,12 @@ describe('checkAndAwardWeeklyPrize', () => {
     expect(db.getPrizePeriodStart()).not.toBe('2025-02-01 00:00:00'); // still resets so it doesn't loop forever
   });
 
-  it("awards the top player a gift worth ~50% of this period's Stars revenue", async () => {
+  it("awards the top player a gift bundle worth ~50-55% of this period's Stars revenue", async () => {
     db.getOrCreateUser(1, 'alice');
     db.getOrCreateUser(2, 'bob');
     setPeriodStart('2025-03-01 00:00:00');
     insertTransaction(1, 200, 'stars_purchase', '2025-03-02 00:00:00');
-    insertTransaction(2, 200, 'stars_purchase', '2025-03-02 00:00:00'); // 400 total revenue this period -> target 200
+    insertTransaction(2, 200, 'stars_purchase', '2025-03-02 00:00:00'); // 400 total revenue this period -> target 200-220
     insertTransaction(1, -200, 'buy_in', '2025-03-03 00:00:00');
     insertTransaction(1, 350, 'cash_out', '2025-03-03 00:00:01'); // alice: +150
     insertTransaction(2, -200, 'buy_in', '2025-03-03 00:00:00');
@@ -98,14 +98,18 @@ describe('checkAndAwardWeeklyPrize', () => {
     vi.mocked(telegram.getAvailableGifts).mockResolvedValue([
       { id: 'cheap', star_count: 15 },
       { id: 'mid', star_count: 100 },
-      { id: 'big', star_count: 250 }, // more than the 200 target, should not be picked
+      { id: 'big', star_count: 250 }, // more than the 220 ceiling, should not be picked
     ]);
     vi.mocked(telegram.sendGift).mockResolvedValue(undefined);
 
     await scheduler.checkAndAwardWeeklyPrize('fake-token');
 
-    expect(telegram.sendGift).toHaveBeenCalledWith('fake-token', expect.objectContaining({ userId: 1, giftId: 'mid' }));
-    expect(db.getLastPrize()).toMatchObject({ telegramId: 1, displayName: 'alice', giftId: 'mid', starCount: 100, netWinnings: 150 });
+    // Budget 220: two 'mid' (200) plus one 'cheap' (15) = 215, closer to the target than a single gift.
+    expect(telegram.sendGift).toHaveBeenCalledTimes(3);
+    expect(telegram.sendGift).toHaveBeenNthCalledWith(1, 'fake-token', expect.objectContaining({ userId: 1, giftId: 'mid' }));
+    expect(telegram.sendGift).toHaveBeenNthCalledWith(2, 'fake-token', expect.objectContaining({ userId: 1, giftId: 'mid' }));
+    expect(telegram.sendGift).toHaveBeenNthCalledWith(3, 'fake-token', expect.objectContaining({ userId: 1, giftId: 'cheap' }));
+    expect(db.getLastPrize()).toMatchObject({ telegramId: 1, displayName: 'alice', giftId: 'mid', starCount: 215, netWinnings: 150 });
   });
 
   it("caps the prize at the bot's available balance even when 50% of revenue is higher", async () => {

@@ -1,5 +1,5 @@
 import { adjustBalance } from './db.js';
-import { pickGiftWithinBudget } from './prizeScheduler.js';
+import { pickGiftBundleWithinBudget } from './prizeScheduler.js';
 import type { TableManager } from './tableManager.js';
 import { getAvailableGifts, getMyStarBalance, sendGift } from './telegram.js';
 import {
@@ -19,7 +19,8 @@ import {
 } from './tournamentDb.js';
 
 const CHECK_INTERVAL_MS = 5_000;
-const PRIZE_SHARE = 0.5;
+const PRIZE_SHARE_MIN = 0.5;
+const PRIZE_SHARE_MAX = 0.55;
 /** Keep some balance in reserve so the bot never fails to answer real Stars purchases because it spent everything on a prize. */
 const RESERVE_STARS = 10;
 
@@ -85,34 +86,37 @@ export async function finishTournament(tableManager: TableManager, botToken: str
     return;
   }
 
-  const target = Math.floor(prizePool * PRIZE_SHARE);
+  const minTarget = Math.floor(prizePool * PRIZE_SHARE_MIN);
+  const maxTarget = Math.floor(prizePool * PRIZE_SHARE_MAX);
   const base = { telegramId: winnerSeat.telegramId, displayName: winnerSeat.displayName, prizePool, players: totalSeats };
-  if (!botToken || target <= 0) {
+  if (!botToken || maxTarget <= 0) {
     recordTournamentResult({ ...base, giftId: null, starCount: null });
     return;
   }
 
   try {
     const [balance, gifts] = await Promise.all([getMyStarBalance(botToken), getAvailableGifts(botToken)]);
-    const spendable = Math.min(target, balance - RESERVE_STARS);
-    const pick = pickGiftWithinBudget(gifts, spendable, true);
-    if (!pick) {
-      console.warn(`[tournament] No gift affordable for the winner (target ${target}⭐, bot balance ${balance}⭐).`);
+    const spendable = Math.min(maxTarget, balance - RESERVE_STARS);
+    const bundle = pickGiftBundleWithinBudget(gifts, spendable);
+    if (!bundle) {
+      console.warn(`[tournament] No gift affordable for the winner (target ${minTarget}-${maxTarget}⭐, bot balance ${balance}⭐).`);
       recordTournamentResult({ ...base, giftId: null, starCount: null });
       return;
     }
-    await sendGift(botToken, {
-      userId: winnerSeat.telegramId,
-      giftId: pick.gift.id,
-      payForUpgrade: pick.payForUpgrade,
-      text: `🏆 You won the daily Stars Poker tournament! Prize pool: ${prizePool}⭐`,
-    });
+    for (const pick of bundle.picks) {
+      await sendGift(botToken, {
+        userId: winnerSeat.telegramId,
+        giftId: pick.gift.id,
+        payForUpgrade: pick.payForUpgrade,
+        text: `🏆 You won the daily Stars Poker tournament! Prize pool: ${prizePool}⭐`,
+      });
+    }
     recordTournamentResult({
       ...base,
-      giftId: pick.gift.id,
-      starCount: pick.gift.star_count + (pick.payForUpgrade ? pick.gift.upgrade_star_count ?? 0 : 0),
+      giftId: bundle.picks[0].gift.id,
+      starCount: bundle.totalSpent,
     });
-    console.log(`[tournament] Awarded a gift to ${winnerSeat.displayName} (${winnerSeat.telegramId}).`);
+    console.log(`[tournament] Awarded ${bundle.picks.length} gift(s) worth ${bundle.totalSpent}⭐ to ${winnerSeat.displayName} (${winnerSeat.telegramId}).`);
   } catch (err) {
     console.error('[tournament] Failed to send the winner gift:', (err as Error).message);
     recordTournamentResult({ ...base, giftId: null, starCount: null });
