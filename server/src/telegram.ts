@@ -68,3 +68,44 @@ export async function answerPreCheckoutQuery(botToken: string, preCheckoutQueryI
     body: JSON.stringify({ pre_checkout_query_id: preCheckoutQueryId, ok, error_message: errorMessage }),
   });
 }
+
+export interface TelegramGift {
+  id: string;
+  star_count: number;
+  upgrade_star_count?: number;
+  sticker?: { emoji?: string };
+}
+
+async function callTelegramApi<T>(botToken: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${TELEGRAM_API}/bot${botToken}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = (await res.json()) as { ok: boolean; result?: T; description?: string };
+  if (!data.ok) throw new Error(`Telegram ${method} failed: ${data.description ?? 'unknown error'}`);
+  return data.result as T;
+}
+
+export async function getMyStarBalance(botToken: string): Promise<number> {
+  const result = await callTelegramApi<{ amount: number }>(botToken, 'getMyStarBalance');
+  return result.amount;
+}
+
+export async function getAvailableGifts(botToken: string): Promise<TelegramGift[]> {
+  const result = await callTelegramApi<{ gifts: TelegramGift[] }>(botToken, 'getAvailableGifts');
+  return result.gifts;
+}
+
+/** Sends a paid gift to a user, spending the bot's own Stars balance. */
+export async function sendGift(
+  botToken: string,
+  params: { userId: number; giftId: string; payForUpgrade?: boolean; text?: string }
+): Promise<void> {
+  await callTelegramApi(botToken, 'sendGift', {
+    user_id: params.userId,
+    gift_id: params.giftId,
+    pay_for_upgrade: params.payForUpgrade,
+    text: params.text,
+  });
+}

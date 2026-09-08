@@ -28,7 +28,24 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
   );
+
+  CREATE TABLE IF NOT EXISTS prize_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    period_start TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS prize_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_id INTEGER NOT NULL,
+    display_name TEXT NOT NULL,
+    gift_id TEXT NOT NULL,
+    star_count INTEGER NOT NULL,
+    net_winnings INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
+
+db.prepare('INSERT OR IGNORE INTO prize_state (id, period_start) VALUES (1, datetime(\'now\'))').run();
 
 // Lightweight migration for databases created before nickname/status_tier existed.
 const existingColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
@@ -106,7 +123,7 @@ export interface LeaderboardEntry {
  * which deliberately excludes Stars purchases so this reflects poker skill/luck
  * rather than spending power.
  */
-export function getLeaderboard(limit = 20): LeaderboardEntry[] {
+export function getLeaderboard(limit = 20, since?: string): LeaderboardEntry[] {
   const rows = db
     .prepare(
       `SELECT u.telegram_id as telegramId,
@@ -115,14 +132,66 @@ export function getLeaderboard(limit = 20): LeaderboardEntry[] {
               SUM(t.amount) as netWinnings
        FROM star_transactions t
        JOIN users u ON u.telegram_id = t.telegram_id
-       WHERE t.reason IN ('buy_in', 'cash_out')
+       WHERE t.reason IN ('buy_in', 'cash_out') AND t.created_at >= ?
        GROUP BY t.telegram_id
        HAVING netWinnings != 0
        ORDER BY netWinnings DESC
        LIMIT ?`
     )
-    .all(limit) as LeaderboardEntry[];
+    .all(since ?? '0000-00-00', limit) as LeaderboardEntry[];
   return rows;
+}
+
+export interface PrizeHistoryEntry {
+  telegramId: number;
+  displayName: string;
+  giftId: string;
+  starCount: number;
+  netWinnings: number;
+  createdAt: string;
+}
+
+export function getPrizePeriodStart(): string {
+  const row = db.prepare('SELECT period_start FROM prize_state WHERE id = 1').get() as { period_start: string };
+  return row.period_start;
+}
+
+export function resetPrizePeriod(): void {
+  db.prepare("UPDATE prize_state SET period_start = datetime('now') WHERE id = 1").run();
+}
+
+export function recordPrizeAwarded(entry: {
+  telegramId: number;
+  displayName: string;
+  giftId: string;
+  starCount: number;
+  netWinnings: number;
+}): void {
+  db.prepare(
+    'INSERT INTO prize_history (telegram_id, display_name, gift_id, star_count, net_winnings) VALUES (?, ?, ?, ?, ?)'
+  ).run(entry.telegramId, entry.displayName, entry.giftId, entry.starCount, entry.netWinnings);
+}
+
+export function getLastPrize(): PrizeHistoryEntry | null {
+  const row = db.prepare('SELECT * FROM prize_history ORDER BY id DESC LIMIT 1').get() as
+    | {
+        telegram_id: number;
+        display_name: string;
+        gift_id: string;
+        star_count: number;
+        net_winnings: number;
+        created_at: string;
+      }
+    | undefined;
+  if (!row) return null;
+  return {
+    telegramId: row.telegram_id,
+    displayName: row.display_name,
+    giftId: row.gift_id,
+    starCount: row.star_count,
+    netWinnings: row.net_winnings,
+    createdAt: row.created_at,
+  };
 }
 
 /** Adjust a user's star balance atomically; throws if it would go negative. */
