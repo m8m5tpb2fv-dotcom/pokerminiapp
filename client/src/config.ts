@@ -3,4 +3,4 @@
 // production build the client and server are deployed as separate services,
 // so this must be baked in at build time via VITE_SERVER_URL, e.g.
 // "https://pokerminiapp-production.up.railway.app" (no trailing slash).
-export const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? '';
+export const SERVER_URL: string = (import.meta.env.VITE_SERVER_URL ?? '').trim().replace(/\/+$/, '');
