@@ -10,6 +10,7 @@ vi.mock('../telegram.js', async () => {
     getMyStarBalance: vi.fn(),
     getAvailableGifts: vi.fn(),
     sendGift: vi.fn(),
+    sendMessage: vi.fn(),
   };
 });
 
@@ -113,6 +114,39 @@ describe('startTournament', () => {
     expect(shortStacks.length).toBeLessThanOrEqual(2);
     expect(tdb.getTournamentState().status).toBe('running');
     expect(tdb.countEntries()).toBe(0);
+  });
+
+  it('notifies every seated player once a bot token is available', () => {
+    tdb.setTournamentStatus('scheduled'); // the previous test left it 'running'
+    const tableManager = new TableManager();
+    vi.mocked(telegram.sendMessage).mockClear();
+    vi.mocked(telegram.sendMessage).mockResolvedValue(undefined);
+    const ids: number[] = [];
+    for (let i = 200; i < 200 + tdb.TOURNAMENT_SEATS; i++) {
+      makePlayer(i, `p${i}`);
+      scheduler.registerForTournament(i, `p${i}`);
+      ids.push(i);
+    }
+
+    scheduler.startTournament(tableManager, 'fake-token');
+
+    expect(telegram.sendMessage).toHaveBeenCalledTimes(9);
+    for (const id of ids) {
+      expect(telegram.sendMessage).toHaveBeenCalledWith('fake-token', id, expect.stringContaining('tournament has started'));
+    }
+  });
+
+  it('notifies refunded players when the tournament is cancelled for lacking players', () => {
+    tdb.setTournamentStatus('scheduled'); // the previous test left it 'running'
+    const tableManager = new TableManager();
+    vi.mocked(telegram.sendMessage).mockClear();
+    vi.mocked(telegram.sendMessage).mockResolvedValue(undefined);
+    makePlayer(300, 'lonely');
+    scheduler.registerForTournament(300, 'lonely');
+
+    scheduler.startTournament(tableManager, 'fake-token');
+
+    expect(telegram.sendMessage).toHaveBeenCalledWith('fake-token', 300, expect.stringContaining('refunded'));
   });
 });
 

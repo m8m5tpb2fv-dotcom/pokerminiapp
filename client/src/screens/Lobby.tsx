@@ -14,11 +14,12 @@ interface Props {
   leaderboard: LeaderboardData;
   statusTiers: StatusTier[];
   rankTiers: RankTier[];
+  tournament: TournamentInfo | null;
+  onTournamentChange: (info: TournamentInfo) => void;
   onSelectTable: (table: TableSummary) => void;
   onBalanceRefresh: () => void;
   onUserChange: (user: User) => void;
   onEditNickname: () => void;
-  onEnterTournament: (info: TournamentInfo) => void;
 }
 
 export function Lobby({
@@ -27,11 +28,12 @@ export function Lobby({
   leaderboard,
   statusTiers,
   rankTiers,
+  tournament,
+  onTournamentChange,
   onSelectTable,
   onBalanceRefresh,
   onUserChange,
   onEditNickname,
-  onEnterTournament,
 }: Props) {
   const [tab, setTab] = useState<LobbyTab>('tables');
 
@@ -57,7 +59,13 @@ export function Lobby({
           <StatusTab user={user} statusTiers={statusTiers} rankTiers={rankTiers} onUserChange={onUserChange} />
         )}
         {tab === 'leaderboard' && (
-          <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} onEnterTournament={onEnterTournament} />
+          <LeaderboardTab
+            user={user}
+            leaderboard={leaderboard}
+            statusTiers={statusTiers}
+            tournament={tournament}
+            onTournamentChange={onTournamentChange}
+          />
         )}
         {tab === 'profile' && (
           <ProfileTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} onEditNickname={onEditNickname} />

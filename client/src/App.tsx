@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { authenticate, fetchLeaderboard, fetchRankTiers, fetchStatusTiers, fetchTables } from './api';
+import { authenticate, fetchLeaderboard, fetchRankTiers, fetchStatusTiers, fetchTables, fetchTournament } from './api';
 import { initTelegram } from './telegram';
 import { pokerSocket } from './ws';
 import { Lobby } from './screens/Lobby';
@@ -15,6 +15,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardData>(EMPTY_LEADERBOARD);
   const [statusTiers, setStatusTiers] = useState<StatusTier[]>([]);
   const [rankTiers, setRankTiers] = useState<RankTier[]>([]);
+  const [tournament, setTournament] = useState<TournamentInfo | null>(null);
   const [activeTable, setActiveTable] = useState<TableSummary | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -25,13 +26,14 @@ export default function App() {
     const off = pokerSocket.on((msg) => {
       if (msg.type === 'auth_ok') setUser(msg.user);
     });
-    Promise.all([authenticate(), fetchTables(), fetchLeaderboard(), fetchStatusTiers(), fetchRankTiers()])
-      .then(([u, t, l, s, r]) => {
+    Promise.all([authenticate(), fetchTables(), fetchLeaderboard(), fetchStatusTiers(), fetchRankTiers(), fetchTournament()])
+      .then(([u, t, l, s, r, tour]) => {
         setUser(u);
         setTables(t);
         setLeaderboard(l);
         setStatusTiers(s);
         setRankTiers(r);
+        setTournament(tour);
       })
       .catch((err) => setLoadError(err.message));
     return off;
@@ -45,15 +47,31 @@ export default function App() {
     }
   }
 
+  // Polls independently of which lobby tab is open, so a player who registered and wandered off
+  // to another tab still gets auto-seated into the tournament table the moment it starts.
   useEffect(() => {
     if (activeTable) return;
     const interval = setInterval(() => {
       fetchTables().then(setTables).catch(() => {});
       fetchLeaderboard().then(setLeaderboard).catch(() => {});
+      fetchTournament().then(setTournament).catch(() => {});
       refreshUser();
     }, 5000);
     return () => clearInterval(interval);
   }, [activeTable]);
+
+  useEffect(() => {
+    if (!tournament?.isSeated || activeTable) return;
+    setActiveTable({
+      tableId: 'tournament',
+      smallBlind: tournament.smallBlind,
+      bigBlind: tournament.bigBlind,
+      maxSeats: tournament.maxSeats,
+      minBuyIn: tournament.buyIn,
+      maxBuyIn: tournament.buyIn,
+      seatedCount: tournament.maxSeats,
+    });
+  }, [tournament, activeTable]);
 
   if (loadError) return <div className="fatal-error">Failed to load: {loadError}</div>;
   if (!user) {
@@ -90,6 +108,7 @@ export default function App() {
           setActiveTable(null);
           refreshUser();
           fetchLeaderboard().then(setLeaderboard).catch(() => {});
+          fetchTournament().then(setTournament).catch(() => {});
         }}
       />
     );
@@ -102,21 +121,12 @@ export default function App() {
       leaderboard={leaderboard}
       statusTiers={statusTiers}
       rankTiers={rankTiers}
+      tournament={tournament}
+      onTournamentChange={setTournament}
       onSelectTable={setActiveTable}
       onBalanceRefresh={refreshUser}
       onUserChange={setUser}
       onEditNickname={() => setEditingNickname(true)}
-      onEnterTournament={(info: TournamentInfo) =>
-        setActiveTable({
-          tableId: 'tournament',
-          smallBlind: info.smallBlind,
-          bigBlind: info.bigBlind,
-          maxSeats: info.maxSeats,
-          minBuyIn: info.buyIn,
-          maxBuyIn: info.buyIn,
-          seatedCount: info.maxSeats,
-        })
-      }
     />
   );
 }

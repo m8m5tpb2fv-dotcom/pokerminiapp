@@ -7,13 +7,14 @@ interface Props {
   user: User;
   leaderboard: LeaderboardData;
   statusTiers: StatusTier[];
-  onEnterTournament: (info: TournamentInfo) => void;
+  tournament: TournamentInfo | null;
+  onTournamentChange: (info: TournamentInfo) => void;
 }
 
-export function LeaderboardTab({ user, leaderboard, statusTiers, onEnterTournament }: Props) {
+export function LeaderboardTab({ user, leaderboard, statusTiers, tournament, onTournamentChange }: Props) {
   return (
     <div className="lobby-section">
-      <TournamentCard user={user} onEnterTournament={onEnterTournament} />
+      <TournamentCard user={user} info={tournament} onChange={onTournamentChange} />
 
       <div className="lobby-section-title">Weekly Leaderboard</div>
       <div className="lobby-hint">Top player each week wins real Telegram gifts worth ~50-55% of the Stars purchased this week, sent by the bot.</div>
