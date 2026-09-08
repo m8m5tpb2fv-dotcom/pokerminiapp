@@ -5,7 +5,7 @@ import { LeaderboardTab } from './lobby/LeaderboardTab';
 import { StatusTab } from './lobby/StatusTab';
 import { TablesTab } from './lobby/TablesTab';
 import { TopUpTab } from './lobby/TopUpTab';
-import type { LeaderboardData, StatusTier, TableSummary, User } from '../types';
+import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from '../types';
 
 interface Props {
   user: User;
@@ -16,6 +16,7 @@ interface Props {
   onBalanceRefresh: () => void;
   onUserChange: (user: User) => void;
   onEditNickname: () => void;
+  onEnterTournament: (info: TournamentInfo) => void;
 }
 
 export function Lobby({
@@ -27,6 +28,7 @@ export function Lobby({
   onBalanceRefresh,
   onUserChange,
   onEditNickname,
+  onEnterTournament,
 }: Props) {
   const [tab, setTab] = useState<LobbyTab>('tables');
 
@@ -46,7 +48,9 @@ export function Lobby({
         {tab === 'tables' && <TablesTab tables={tables} onSelectTable={onSelectTable} />}
         {tab === 'topup' && <TopUpTab onBalanceRefresh={onBalanceRefresh} />}
         {tab === 'status' && <StatusTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} />}
-        {tab === 'leaderboard' && <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} />}
+        {tab === 'leaderboard' && (
+          <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} onEnterTournament={onEnterTournament} />
+        )}
       </div>
 
       <TabBar active={tab} onChange={setTab} />

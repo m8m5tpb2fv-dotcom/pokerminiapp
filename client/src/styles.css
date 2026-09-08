@@ -270,6 +270,57 @@ button:disabled {
   margin-bottom: 4px;
 }
 
+.tournament-card {
+  background: var(--surface);
+  border: 1px solid #2a3947;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.tournament-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tournament-countdown {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.tournament-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.tournament-progress {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.btn-tournament {
+  width: 100%;
+  background: var(--accent);
+  color: #1a1200;
+}
+
+.btn-tournament-leave {
+  width: 100%;
+  background: var(--surface-2);
+  color: var(--danger);
+}
+
+.tournament-locked {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .status-badge {
   display: inline-block;
   font-size: 10px;

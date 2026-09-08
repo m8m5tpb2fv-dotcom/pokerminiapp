@@ -75,15 +75,23 @@ export function TableScreen({ summary, user, statusTiers, onBalanceChange, onLea
 
   const potTotal = view?.pots.reduce((sum, p) => sum + p.amount, 0) ?? 0;
   const canAct = Boolean(view && mySeat && view.toActSeatIndex === mySeat.seatIndex && mySeat.status === 'active');
+  const isTournamentTable = summary.tableId === 'tournament';
+  // Auto-seated tournament players stay in their seat (even after elimination) until the
+  // whole tournament concludes and the server stands everyone up - no early cash-out.
+  const lockedInTournament = isTournamentTable && Boolean(mySeat);
 
   return (
     <div className="table-screen">
       <div className="table-header">
-        <button className="btn-back" onClick={leave}>
-          ← Leave
-        </button>
+        {lockedInTournament ? (
+          <div className="btn-back tournament-locked">🏆 Tournament</div>
+        ) : (
+          <button className="btn-back" onClick={leave}>
+            ← Leave
+          </button>
+        )}
         <div className="table-title">
-          {summary.tableId.toUpperCase()} · ⭐{summary.smallBlind}/{summary.bigBlind}
+          {isTournamentTable ? 'TOURNAMENT' : summary.tableId.toUpperCase()} · ⭐{summary.smallBlind}/{summary.bigBlind}
         </div>
         <div className="my-balance">⭐ {user.starsBalance}</div>
       </div>
@@ -130,7 +138,7 @@ export function TableScreen({ summary, user, statusTiers, onBalanceChange, onLea
         })}
       </div>
 
-      {!mySeat && (
+      {!mySeat && !isTournamentTable && (
         <div className="buyin-panel">
           <label>
             Buy-in: ⭐

@@ -1,6 +1,6 @@
 import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
-import type { LeaderboardData, StatusTier, TableSummary, User } from './types';
+import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${SERVER_URL}/api${path}`, {
@@ -51,4 +51,17 @@ export async function fetchStatusTiers(): Promise<StatusTier[]> {
 export async function purchaseStatus(statusId: string): Promise<User> {
   const { user } = await post<{ user: User }>('/status/purchase', { initData: getInitData(), statusId });
   return user;
+}
+
+export async function fetchTournament(): Promise<TournamentInfo> {
+  const res = await fetch(`${SERVER_URL}/api/tournament?initData=${encodeURIComponent(getInitData())}`);
+  return (await res.json()) as TournamentInfo;
+}
+
+export async function registerForTournament(): Promise<void> {
+  await post('/tournament/register', { initData: getInitData() });
+}
+
+export async function unregisterFromTournament(): Promise<void> {
+  await post('/tournament/unregister', { initData: getInitData() });
 }

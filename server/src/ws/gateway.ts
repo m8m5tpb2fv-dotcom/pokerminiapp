@@ -4,6 +4,11 @@ import { authenticateInitData } from '../authenticate.js';
 import { adjustBalance, displayNameFor, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
 import type { ActionType } from '../poker/types.js';
 import type { TableManager } from '../tableManager.js';
+import { TOURNAMENT_TABLE_ID, getTournamentState } from '../tournamentDb.js';
+
+function isTournamentRunning(): boolean {
+  return getTournamentState().status === 'running';
+}
 
 interface ClientMessage {
   type: 'auth' | 'watch_table' | 'unwatch_table' | 'join_table' | 'leave_table' | 'action';
@@ -72,6 +77,13 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
   function cashOutAndLeave(ws: WebSocket, state: ConnState): void {
     if (!state.telegramId || !state.seatedTableId) return;
     const tableId = state.seatedTableId;
+    if (tableId === TOURNAMENT_TABLE_ID && isTournamentRunning()) {
+      // Elimination/payout happens server-side via the scheduler; a socket disconnect
+      // must not stand the player up early. Just drop this socket's binding.
+      state.seatedTableId = null;
+      if (state.watchingTableId !== tableId) leaveRoom(ws, tableId);
+      return;
+    }
     const table = tableManager.getTable(tableId);
     if (table) {
       const stack = table.standUp(state.telegramId);
@@ -138,9 +150,16 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
         }
 
         if (msg.type === 'watch_table') {
-          if (!msg.tableId || !tableManager.getTable(msg.tableId)) {
+          const table = msg.tableId ? tableManager.getTable(msg.tableId) : undefined;
+          if (!msg.tableId || !table) {
             send(ws, { type: 'error', message: 'Unknown table' });
             return;
+          }
+          // Tournament seating happens server-side via the scheduler, not join_table, so
+          // rebind this socket to its existing seat (e.g. on reconnect or first entry).
+          if (msg.tableId === TOURNAMENT_TABLE_ID && !state.seatedTableId && table.getSeat(state.telegramId)) {
+            tableManager.markSeated(state.telegramId, msg.tableId);
+            state.seatedTableId = msg.tableId;
           }
           setWatching(ws, state, msg.tableId);
           return;
@@ -155,6 +174,10 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
           const { tableId, seatIndex, buyIn } = msg;
           if (!tableId || seatIndex === undefined || !buyIn) {
             send(ws, { type: 'error', message: 'tableId, seatIndex and buyIn are required' });
+            return;
+          }
+          if (tableId === TOURNAMENT_TABLE_ID) {
+            send(ws, { type: 'error', message: 'The tournament table can only be joined by registering for the tournament' });
             return;
           }
           if (tableManager.findTableFor(state.telegramId)) {
@@ -186,6 +209,10 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
         }
 
         if (msg.type === 'leave_table') {
+          if (state.seatedTableId === TOURNAMENT_TABLE_ID && isTournamentRunning()) {
+            send(ws, { type: 'error', message: 'Cannot leave the tournament once it has started' });
+            return;
+          }
           cashOutAndLeave(ws, state);
           send(ws, { type: 'left_table' });
           return;
