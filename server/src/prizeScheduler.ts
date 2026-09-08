@@ -1,26 +1,27 @@
-import { getLastPrize, getLeaderboard, getPrizePeriodStart, recordPrizeAwarded, resetPrizePeriod } from './db.js';
+import { getLastPrize, getLeaderboard, getPrizePeriodStart, getRevenueSince, recordPrizeAwarded, resetPrizePeriod } from './db.js';
 import { getAvailableGifts, getMyStarBalance, sendGift, type TelegramGift } from './telegram.js';
 
 const PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // weekly
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // check hourly whether the period has elapsed
+/** The winner's gift is worth up to this share of the Stars the bot actually took in from purchases this period. */
+const PRIZE_REVENUE_SHARE = 0.5;
 /** Keep some balance in reserve so the bot never fails to answer real Stars purchases because it spent everything on a prize. */
 const RESERVE_STARS = 10;
 
-function pickAffordableGift(gifts: TelegramGift[], balance: number, wantUpgrade: boolean): { gift: TelegramGift; payForUpgrade: boolean } | null {
-  const spendable = balance - RESERVE_STARS;
+/** Picks the priciest gift (preferring an upgraded/collectible one) that fits within the given Star budget. */
+function pickGiftWithinBudget(gifts: TelegramGift[], spendable: number, wantUpgrade: boolean): { gift: TelegramGift; payForUpgrade: boolean } | null {
   if (spendable <= 0) return null;
 
   if (wantUpgrade) {
     const upgradable = gifts
       .filter((g) => g.upgrade_star_count && g.star_count + g.upgrade_star_count <= spendable)
-      .sort((a, b) => a.star_count + (a.upgrade_star_count ?? 0) - (b.star_count + (b.upgrade_star_count ?? 0)));
+      .sort((a, b) => b.star_count + (b.upgrade_star_count ?? 0) - (a.star_count + (a.upgrade_star_count ?? 0)));
     if (upgradable.length > 0) return { gift: upgradable[0], payForUpgrade: true };
   }
 
-  const affordable = gifts.filter((g) => g.star_count <= spendable).sort((a, b) => a.star_count - b.star_count);
+  const affordable = gifts.filter((g) => g.star_count <= spendable).sort((a, b) => b.star_count - a.star_count);
   if (affordable.length === 0) return null;
-  // Prefer the priciest one we can afford without upgrading, so the weekly prize still feels substantial.
-  return { gift: affordable[affordable.length - 1], payForUpgrade: false };
+  return { gift: affordable[0], payForUpgrade: false };
 }
 
 /** Checks whether the weekly leaderboard period has elapsed and, if so, gifts the #1 player and starts a new period. */
@@ -38,11 +39,22 @@ export async function checkAndAwardWeeklyPrize(botToken: string | undefined): Pr
     return;
   }
 
+  const revenueThisPeriod = getRevenueSince(periodStart);
+  const target = Math.floor(revenueThisPeriod * PRIZE_REVENUE_SHARE);
+  if (target <= 0) {
+    console.log('[prize] No Stars purchased this period; skipping the prize and starting a new one.');
+    resetPrizePeriod();
+    return;
+  }
+
   try {
     const [balance, gifts] = await Promise.all([getMyStarBalance(botToken), getAvailableGifts(botToken)]);
-    const pick = pickAffordableGift(gifts, balance, true);
+    const spendable = Math.min(target, balance - RESERVE_STARS);
+    const pick = pickGiftWithinBudget(gifts, spendable, true);
     if (!pick) {
-      console.warn(`[prize] Skipping weekly prize: bot Star balance (${balance}) too low to afford any gift.`);
+      console.warn(
+        `[prize] Skipping weekly prize: target ${target}⭐ (50% of ${revenueThisPeriod}⭐ revenue) vs bot balance ${balance}⭐ leaves nothing affordable.`
+      );
       return; // try again on the next hourly check without losing the period's winner
     }
     await sendGift(botToken, {
@@ -59,13 +71,15 @@ export async function checkAndAwardWeeklyPrize(botToken: string | undefined): Pr
       netWinnings: winner.netWinnings,
     });
     resetPrizePeriod();
-    console.log(`[prize] Awarded a gift to ${winner.displayName} (${winner.telegramId}) for +${winner.netWinnings} net winnings.`);
+    console.log(
+      `[prize] Awarded a ${pick.gift.star_count}⭐ gift to ${winner.displayName} (${winner.telegramId}) — target was 50% of ${revenueThisPeriod}⭐ this period.`
+    );
   } catch (err) {
     console.error('[prize] Failed to award weekly prize:', (err as Error).message);
   }
 }
 
-export { pickAffordableGift };
+export { pickGiftWithinBudget };
 
 export function startPrizeScheduler(botToken: string | undefined): void {
   checkAndAwardWeeklyPrize(botToken);
