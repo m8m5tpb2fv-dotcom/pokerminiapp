@@ -42,9 +42,9 @@ export function Lobby({
           <img src="/logo-96.png" alt="" className="lobby-logo" />
           <div>
             <div className="lobby-title">Stars Poker</div>
-            <button className="lobby-name-button" onClick={onEditNickname}>
-              {user.displayName} <StatusBadge tierId={user.statusTier} tiers={statusTiers} /> · edit
-            </button>
+            <div className="lobby-name-display">
+              {user.displayName} <StatusBadge tierId={user.statusTier} tiers={statusTiers} />
+            </div>
           </div>
         </div>
         <div className="lobby-balance">⭐ {user.starsBalance}</div>
