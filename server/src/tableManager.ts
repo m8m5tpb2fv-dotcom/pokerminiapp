@@ -2,9 +2,9 @@ import { Table } from './poker/Table.js';
 import type { TableConfig } from './poker/types.js';
 
 export const TABLE_CONFIGS: TableConfig[] = [
-  { tableId: 'micro', smallBlind: 5, bigBlind: 10, maxSeats: 6, minBuyIn: 200, maxBuyIn: 1000, turnTimeoutMs: 20_000 },
-  { tableId: 'standard', smallBlind: 10, bigBlind: 20, maxSeats: 6, minBuyIn: 400, maxBuyIn: 2000, turnTimeoutMs: 20_000 },
-  { tableId: 'high', smallBlind: 20, bigBlind: 50, maxSeats: 9, minBuyIn: 1000, maxBuyIn: 5000, turnTimeoutMs: 20_000 },
+  { tableId: 'micro', smallBlind: 1, bigBlind: 2, maxSeats: 6, minBuyIn: 10, maxBuyIn: 50, turnTimeoutMs: 20_000 },
+  { tableId: 'standard', smallBlind: 2, bigBlind: 4, maxSeats: 6, minBuyIn: 20, maxBuyIn: 100, turnTimeoutMs: 20_000 },
+  { tableId: 'high', smallBlind: 10, bigBlind: 20, maxSeats: 9, minBuyIn: 100, maxBuyIn: 500, turnTimeoutMs: 20_000 },
 ];
 
 export interface TableSummary {
