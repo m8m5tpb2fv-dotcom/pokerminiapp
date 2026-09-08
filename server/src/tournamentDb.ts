@@ -5,8 +5,8 @@ export const TOURNAMENT_SEATS = 9;
 export const TOURNAMENT_BUY_IN = 50;
 export const TOURNAMENT_BLIND_SB = 5;
 export const TOURNAMENT_BLIND_BB = 10;
-/** Daily start time, UTC hour. */
-export const TOURNAMENT_START_HOUR_UTC = 20;
+/** Daily start time, UTC hour (17:00 UTC = 20:00 Moscow time, UTC+3). */
+export const TOURNAMENT_START_HOUR_UTC = 17;
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS tournament_state (
@@ -46,6 +46,18 @@ db.prepare('INSERT OR IGNORE INTO tournament_state (id, next_start_at, status) V
   nextDailyStartFrom(new Date()),
   'scheduled'
 );
+
+// If TOURNAMENT_START_HOUR_UTC was retuned since the slot above was first seeded, realign an
+// already-scheduled (not running) next_start_at now instead of waiting for it to fire/cancel once.
+{
+  const row = db.prepare('SELECT next_start_at as nextStartAt, status FROM tournament_state WHERE id = 1').get() as {
+    nextStartAt: string;
+    status: string;
+  };
+  if (row.status === 'scheduled' && Number(row.nextStartAt.slice(11, 13)) !== TOURNAMENT_START_HOUR_UTC) {
+    db.prepare('UPDATE tournament_state SET next_start_at = ? WHERE id = 1').run(nextDailyStartFrom(new Date()));
+  }
+}
 
 export interface TournamentState {
   nextStartAt: string;
