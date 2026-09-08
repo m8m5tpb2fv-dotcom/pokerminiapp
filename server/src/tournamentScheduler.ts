@@ -1,7 +1,7 @@
 import { adjustBalance, getAvatarVersion } from './db.js';
 import { pickGiftBundleWithinBudget } from './prizeScheduler.js';
 import type { TableManager } from './tableManager.js';
-import { getAvailableGifts, getMyStarBalance, sendGift } from './telegram.js';
+import { getAvailableGifts, getMyStarBalance, sendGift, sendMessage } from './telegram.js';
 import {
   TOURNAMENT_BUY_IN,
   TOURNAMENT_SEATS,
@@ -44,7 +44,17 @@ export function unregisterFromTournament(telegramId: number): void {
   if (removeEntry(telegramId)) adjustBalance(telegramId, TOURNAMENT_BUY_IN, 'tournament_entry_refund');
 }
 
-export function startTournament(tableManager: TableManager): void {
+/** Best-effort notification; a player who hasn't started a chat with the bot yet just won't get it. */
+function notifyPlayers(botToken: string | undefined, telegramIds: number[], text: string): void {
+  if (!botToken) return;
+  for (const telegramId of telegramIds) {
+    sendMessage(botToken, telegramId, text).catch((err) =>
+      console.error(`[tournament] Failed to notify ${telegramId}:`, (err as Error).message)
+    );
+  }
+}
+
+export function startTournament(tableManager: TableManager, botToken?: string): void {
   const entries = listEntries();
   const table = tableManager.getTable(TOURNAMENT_TABLE_ID);
   if (!table) return;
@@ -52,6 +62,11 @@ export function startTournament(tableManager: TableManager): void {
   if (entries.length < TOURNAMENT_SEATS) {
     for (const e of entries) adjustBalance(e.telegramId, TOURNAMENT_BUY_IN, 'tournament_entry_refund');
     console.log(`[tournament] Cancelled: only ${entries.length}/${TOURNAMENT_SEATS} registered.`);
+    notifyPlayers(
+      botToken,
+      entries.map((e) => e.telegramId),
+      `Not enough players registered for today's tournament (${entries.length}/${TOURNAMENT_SEATS}) — your ${TOURNAMENT_BUY_IN}⭐ buy-in has been refunded.`
+    );
     clearEntries();
     advanceToNextDay();
     return;
@@ -64,6 +79,11 @@ export function startTournament(tableManager: TableManager): void {
   clearEntries();
   setTournamentStatus('running');
   console.log(`[tournament] Started with ${entries.length} players.`);
+  notifyPlayers(
+    botToken,
+    entries.map((e) => e.telegramId),
+    '🏆 The daily Stars Poker tournament has started! Open the app now — your seat is ready.'
+  );
 }
 
 export async function finishTournament(tableManager: TableManager, botToken: string | undefined): Promise<void> {
@@ -129,7 +149,7 @@ async function tick(tableManager: TableManager, botToken: string | undefined): P
   const state = getTournamentState();
   if (state.status === 'scheduled') {
     const startsAt = new Date(`${state.nextStartAt.replace(' ', 'T')}Z`).getTime();
-    if (Date.now() >= startsAt) startTournament(tableManager);
+    if (Date.now() >= startsAt) startTournament(tableManager, botToken);
     return;
   }
 

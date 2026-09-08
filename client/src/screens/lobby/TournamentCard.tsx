@@ -13,40 +13,20 @@ function formatCountdown(nextStartAt: string, now: number): string {
 
 interface Props {
   user: User;
-  onEnterTournament: (info: TournamentInfo) => void;
+  /** Fetched and polled by App.tsx regardless of the active tab, so seating/countdown stay live everywhere. */
+  info: TournamentInfo | null;
+  onChange: (info: TournamentInfo) => void;
 }
 
-export function TournamentCard({ user, onEnterTournament }: Props) {
-  const [info, setInfo] = useState<TournamentInfo | null>(null);
+export function TournamentCard({ user, info, onChange }: Props) {
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    function load(): void {
-      fetchTournament()
-        .then((i) => {
-          if (!cancelled) setInfo(i);
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
-  useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
-
-  useEffect(() => {
-    if (info?.isSeated) onEnterTournament(info);
-  }, [info, onEnterTournament]);
 
   if (!info) return null;
 
@@ -57,7 +37,7 @@ export function TournamentCard({ user, onEnterTournament }: Props) {
     try {
       if (info.isRegistered) await unregisterFromTournament();
       else await registerForTournament();
-      setInfo(await fetchTournament());
+      onChange(await fetchTournament());
     } catch (err) {
       setError((err as Error).message);
     } finally {
