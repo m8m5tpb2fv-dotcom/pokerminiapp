@@ -3,14 +3,14 @@ import { purchaseStatus, requestStarsInvoice } from '../api';
 import { StatusBadge } from '../components/StatusBadge';
 import { openInvoice, isRealTelegramClient } from '../telegram';
 import { pokerSocket } from '../ws';
-import type { LeaderboardEntry, StatusTier, TableSummary, User } from '../types';
+import type { LeaderboardData, StatusTier, TableSummary, User } from '../types';
 
 const STAR_PACKAGES = [50, 100, 250, 500, 1000];
 
 interface Props {
   user: User;
   tables: TableSummary[];
-  leaderboard: LeaderboardEntry[];
+  leaderboard: LeaderboardData;
   statusTiers: StatusTier[];
   onSelectTable: (table: TableSummary) => void;
   onBalanceRefresh: () => void;
@@ -128,11 +128,18 @@ export function Lobby({
         </div>
       )}
 
-      {leaderboard.length > 0 && (
+      {(leaderboard.leaderboard.length > 0 || leaderboard.lastPrize) && (
         <div className="lobby-section">
-          <div className="lobby-section-title">Leaderboard</div>
+          <div className="lobby-section-title">Weekly Leaderboard</div>
+          <div className="lobby-hint">Top player each week wins a real Telegram gift, sent by the bot.</div>
+          {leaderboard.lastPrize && (
+            <div className="prize-banner">
+              🎁 Last week's winner: <strong>{leaderboard.lastPrize.displayName}</strong> — a ⭐{leaderboard.lastPrize.starCount} gift
+              for +{leaderboard.lastPrize.netWinnings} net winnings
+            </div>
+          )}
           <div className="leaderboard-list">
-            {leaderboard.map((entry, i) => (
+            {leaderboard.leaderboard.map((entry, i) => (
               <div
                 key={entry.telegramId}
                 className={`leaderboard-row ${entry.telegramId === user.telegramId ? 'leaderboard-row-me' : ''}`}

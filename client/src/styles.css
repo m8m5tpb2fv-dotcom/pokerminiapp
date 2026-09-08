@@ -221,6 +221,16 @@ button:disabled {
   color: var(--danger);
 }
 
+.prize-banner {
+  background: rgba(245, 181, 0, 0.12);
+  border: 1px solid rgba(245, 181, 0, 0.4);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
 .status-badge {
   display: inline-block;
   font-size: 10px;

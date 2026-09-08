@@ -9,6 +9,7 @@ import { starsRouter, telegramWebhookRouter } from './routes/stars.js';
 import { statusesRouter } from './routes/statuses.js';
 import { tablesRouter } from './routes/tables.js';
 import { TableManager } from './tableManager.js';
+import { startPrizeScheduler } from './prizeScheduler.js';
 import { attachWebSocketServer } from './ws/gateway.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -39,3 +40,5 @@ attachWebSocketServer(server, tableManager, BOT_TOKEN);
 server.listen(PORT, () => {
   console.log(`Poker server listening on :${PORT}`);
 });
+
+startPrizeScheduler(BOT_TOKEN);

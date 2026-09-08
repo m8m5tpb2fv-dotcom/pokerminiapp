@@ -5,12 +5,14 @@ import { pokerSocket } from './ws';
 import { Lobby } from './screens/Lobby';
 import { NicknameScreen } from './screens/Nickname';
 import { TableScreen } from './screens/Table';
-import type { LeaderboardEntry, StatusTier, TableSummary, User } from './types';
+import type { LeaderboardData, StatusTier, TableSummary, User } from './types';
+
+const EMPTY_LEADERBOARD: LeaderboardData = { leaderboard: [], periodStart: '', lastPrize: null };
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [tables, setTables] = useState<TableSummary[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardData>(EMPTY_LEADERBOARD);
   const [statusTiers, setStatusTiers] = useState<StatusTier[]>([]);
   const [activeTable, setActiveTable] = useState<TableSummary | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);

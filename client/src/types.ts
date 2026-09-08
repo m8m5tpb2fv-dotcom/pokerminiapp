@@ -27,6 +27,21 @@ export interface LeaderboardEntry {
   netWinnings: number;
 }
 
+export interface LastPrize {
+  telegramId: number;
+  displayName: string;
+  giftId: string;
+  starCount: number;
+  netWinnings: number;
+  createdAt: string;
+}
+
+export interface LeaderboardData {
+  leaderboard: LeaderboardEntry[];
+  periodStart: string;
+  lastPrize: LastPrize | null;
+}
+
 export interface TableSummary {
   tableId: string;
   smallBlind: number;
