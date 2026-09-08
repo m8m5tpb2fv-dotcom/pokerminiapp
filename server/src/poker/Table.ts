@@ -52,12 +52,20 @@ export class Table {
   private turnTimer: ReturnType<typeof setTimeout> | null = null;
   private lastAction: TableStateView['lastAction'] = null;
   private winners: TableStateView['winners'] = null;
+  private handParticipants: number[] = [];
   private onChange: () => void;
+  private onHandComplete: (participantIds: number[], winnerIds: number[]) => void;
   private rng: () => number;
 
-  constructor(config: TableConfig, onChange: () => void = () => {}, rng: () => number = Math.random) {
+  constructor(
+    config: TableConfig,
+    onChange: () => void = () => {},
+    onHandComplete: (participantIds: number[], winnerIds: number[]) => void = () => {},
+    rng: () => number = Math.random
+  ) {
     this.config = config;
     this.onChange = onChange;
+    this.onHandComplete = onHandComplete;
     this.rng = rng;
   }
 
@@ -158,6 +166,7 @@ export class Table {
     this.communityCards = [];
     this.winners = null;
     this.lastAction = null;
+    this.handParticipants = players.map((p) => p.telegramId);
     this.deck = new Deck(this.rng);
 
     const ordered = players.sort((a, b) => a.seatIndex - b.seatIndex);
@@ -404,6 +413,7 @@ export class Table {
   private finishHand(): void {
     this.handInProgress = false;
     this.toActSeatIndex = null;
+    this.onHandComplete(this.handParticipants, (this.winners ?? []).map((w) => w.telegramId));
     this.onChange();
     for (const seat of [...this.seats.values()]) {
       if (seat.stack <= 0) {

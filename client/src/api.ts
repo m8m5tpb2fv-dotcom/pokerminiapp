@@ -1,6 +1,6 @@
 import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
-import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from './types';
+import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${SERVER_URL}/api${path}`, {
@@ -64,4 +64,10 @@ export async function registerForTournament(): Promise<void> {
 
 export async function unregisterFromTournament(): Promise<void> {
   await post('/tournament/unregister', { initData: getInitData() });
+}
+
+export async function fetchRankTiers(): Promise<RankTier[]> {
+  const res = await fetch(`${SERVER_URL}/api/ranks`);
+  const data = await res.json();
+  return data.ranks as RankTier[];
 }

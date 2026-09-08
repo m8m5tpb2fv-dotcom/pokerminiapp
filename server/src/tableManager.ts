@@ -1,5 +1,6 @@
 import { Table } from './poker/Table.js';
 import type { TableConfig } from './poker/types.js';
+import { awardHandPoints } from './ranking.js';
 import {
   TOURNAMENT_BLIND_BB,
   TOURNAMENT_BLIND_SB,
@@ -45,7 +46,9 @@ export class TableManager {
 
   constructor() {
     for (const config of [...TABLE_CONFIGS, TOURNAMENT_CONFIG]) {
-      const table = new Table(config, () => this.notify(config.tableId));
+      const table = new Table(config, () => this.notify(config.tableId), (participants, winners) =>
+        awardHandPoints(participants, winners)
+      );
       this.tables.set(config.tableId, table);
     }
   }

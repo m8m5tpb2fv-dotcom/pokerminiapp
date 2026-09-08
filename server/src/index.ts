@@ -5,6 +5,7 @@ import http from 'node:http';
 import { authRouter } from './routes/auth.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
 import { nicknameRouter } from './routes/nickname.js';
+import { ranksRouter } from './routes/ranks.js';
 import { starsRouter, telegramWebhookRouter } from './routes/stars.js';
 import { statusesRouter } from './routes/statuses.js';
 import { tablesRouter } from './routes/tables.js';
@@ -36,6 +37,7 @@ app.use('/api', leaderboardRouter());
 app.use('/api', nicknameRouter(BOT_TOKEN));
 app.use('/api', statusesRouter(BOT_TOKEN));
 app.use('/api', tournamentRouter(tableManager, BOT_TOKEN));
+app.use('/api', ranksRouter());
 
 const server = http.createServer(app);
 attachWebSocketServer(server, tableManager, BOT_TOKEN);

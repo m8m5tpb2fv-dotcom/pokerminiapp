@@ -1,15 +1,60 @@
 import { useState } from 'react';
 import { purchaseStatus } from '../../api';
 import { pokerSocket } from '../../ws';
-import type { StatusTier, User } from '../../types';
+import type { RankTier, StatusTier, User } from '../../types';
 
 interface Props {
   user: User;
   statusTiers: StatusTier[];
+  rankTiers: RankTier[];
   onUserChange: (user: User) => void;
 }
 
-export function StatusTab({ user, statusTiers, onUserChange }: Props) {
+function RankProgress({ user, rankTiers }: { user: User; rankTiers: RankTier[] }) {
+  const currentIndex = rankTiers.findIndex((t) => t.id === user.rankTier);
+  const current = currentIndex >= 0 ? rankTiers[currentIndex] : null;
+  const next = rankTiers[currentIndex + 1] ?? (currentIndex === -1 ? rankTiers[0] : undefined);
+  const floor = current?.threshold ?? 0;
+  const pct = next ? Math.min(100, Math.round(((user.points - floor) / (next.threshold - floor)) * 100)) : 100;
+
+  return (
+    <div className="lobby-section">
+      <div className="lobby-section-title">Rank</div>
+      <div className="lobby-hint">
+        Earn 10 points for every hand you play and 50 for every hand you win. Reaching a new rank pays out a
+        one-time Stars bonus automatically.
+      </div>
+      <div className="rank-current">
+        {current ? (
+          <span style={{ color: current.color }}>{current.label}</span>
+        ) : (
+          <span className="rank-none">No rank yet</span>
+        )}
+        <span className="rank-points">{user.points} pts</span>
+      </div>
+      {next && (
+        <>
+          <div className="rank-progress-bar">
+            <div className="rank-progress-fill" style={{ width: `${pct}%`, background: next.color }} />
+          </div>
+          <div className="lobby-hint">
+            {Math.max(0, next.threshold - user.points)} points to {next.label} (+⭐{next.bonus})
+          </div>
+        </>
+      )}
+      <div className="rank-tier-list">
+        {rankTiers.map((tier) => (
+          <div key={tier.id} className={`rank-tier-chip ${user.points >= tier.threshold ? 'rank-tier-chip-done' : ''}`}>
+            <span style={{ color: tier.color }}>{tier.label}</span>
+            <span className="lobby-hint">{tier.threshold}+ · +⭐{tier.bonus}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function StatusTab({ user, statusTiers, rankTiers, onUserChange }: Props) {
   const [purchasingStatus, setPurchasingStatus] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -27,24 +72,27 @@ export function StatusTab({ user, statusTiers, onUserChange }: Props) {
   }
 
   return (
-    <div className="lobby-section">
-      <div className="lobby-section-title">Status</div>
-      <div className="lobby-hint">Cosmetic rank shown next to your name at the table and on the leaderboard. Paid for with your Stars balance.</div>
-      <div className="status-shop">
-        {statusTiers.map((tier) => (
-          <button
-            key={tier.id}
-            className="status-shop-item"
-            style={{ borderColor: tier.color }}
-            disabled={purchasingStatus !== null || user.statusTier === tier.id || user.starsBalance < tier.price}
-            onClick={() => buyStatus(tier.id)}
-          >
-            <span style={{ color: tier.color }}>{tier.label}</span>
-            <span>{user.statusTier === tier.id ? 'Active' : `⭐ ${tier.price}`}</span>
-          </button>
-        ))}
+    <>
+      <RankProgress user={user} rankTiers={rankTiers} />
+      <div className="lobby-section">
+        <div className="lobby-section-title">Status</div>
+        <div className="lobby-hint">Cosmetic rank shown next to your name at the table and on the leaderboard. Paid for with your Stars balance.</div>
+        <div className="status-shop">
+          {statusTiers.map((tier) => (
+            <button
+              key={tier.id}
+              className="status-shop-item"
+              style={{ borderColor: tier.color }}
+              disabled={purchasingStatus !== null || user.statusTier === tier.id || user.starsBalance < tier.price}
+              onClick={() => buyStatus(tier.id)}
+            >
+              <span style={{ color: tier.color }}>{tier.label}</span>
+              <span>{user.statusTier === tier.id ? 'Active' : `⭐ ${tier.price}`}</span>
+            </button>
+          ))}
+        </div>
+        {statusError && <div className="toast toast-error">{statusError}</div>}
       </div>
-      {statusError && <div className="toast toast-error">{statusError}</div>}
-    </div>
+    </>
   );
 }

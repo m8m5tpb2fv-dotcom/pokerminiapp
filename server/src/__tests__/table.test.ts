@@ -136,6 +136,47 @@ describe('Table heads-up hand', () => {
   });
 });
 
+describe('Table onHandComplete hook', () => {
+  it('reports every dealt-in player and the showdown winner', () => {
+    vi.useFakeTimers();
+    const onHandComplete = vi.fn();
+    const table = new Table(makeConfig(), () => {}, onHandComplete);
+    table.sitDown(0, 1, 'Alice', 500);
+    table.sitDown(1, 2, 'Bob', 500);
+
+    table.applyAction(1, 'call');
+    table.applyAction(2, 'check'); // -> flop
+    table.applyAction(2, 'check');
+    table.applyAction(1, 'check'); // -> turn
+    table.applyAction(2, 'check');
+    table.applyAction(1, 'check'); // -> river
+    table.applyAction(2, 'check');
+    table.applyAction(1, 'check'); // -> showdown, hand finishes
+
+    expect(onHandComplete).toHaveBeenCalledTimes(1);
+    const [participants, winners] = onHandComplete.mock.calls[0];
+    expect(participants.slice().sort()).toEqual([1, 2]);
+    expect(winners.length).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
+
+  it('reports both dealt-in players even on an uncontested fold win', () => {
+    vi.useFakeTimers();
+    const onHandComplete = vi.fn();
+    const table = new Table(makeConfig(), () => {}, onHandComplete);
+    table.sitDown(0, 1, 'Alice', 500);
+    table.sitDown(1, 2, 'Bob', 500);
+
+    table.applyAction(1, 'fold');
+
+    expect(onHandComplete).toHaveBeenCalledTimes(1);
+    const [participants, winners] = onHandComplete.mock.calls[0];
+    expect(participants.slice().sort()).toEqual([1, 2]);
+    expect(winners).toEqual([2]);
+    vi.useRealTimers();
+  });
+});
+
 describe('Table 3-way all-in side pot', () => {
   it('creates a side pot when a short stack goes all-in and others keep betting', () => {
     vi.useFakeTimers();

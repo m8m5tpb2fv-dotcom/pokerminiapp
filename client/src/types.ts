@@ -11,12 +11,23 @@ export interface User {
   statusTier: string | null;
   displayName: string;
   starsBalance: number;
+  points: number;
+  rankTier: string | null;
 }
 
 export interface StatusTier {
   id: string;
   label: string;
   price: number;
+  color: string;
+}
+
+/** Earned automatically by playing hands - separate from the purchasable StatusTier badges. */
+export interface RankTier {
+  id: string;
+  label: string;
+  threshold: number;
+  bonus: number;
   color: string;
 }
 
