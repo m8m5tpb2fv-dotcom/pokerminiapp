@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, getBalance, setStatusTier, toClientUser } from '../db.js';
-import { STATUS_TIERS, findStatusTier } from '../statusTiers.js';
+import { adjustBalance, getBalance, getOrCreateUser, setStatusTier, toClientUser } from '../db.js';
+import { STATUS_TIERS, findStatusTier, tierRank } from '../statusTiers.js';
 
 export function statusesRouter(botToken: string | undefined): Router {
   const router = Router();
@@ -18,6 +18,11 @@ export function statusesRouter(botToken: string | undefined): Router {
 
     const tier = findStatusTier(statusId);
     if (!tier) return res.status(400).json({ error: 'Unknown status' });
+
+    const currentStatusTier = getOrCreateUser(tgUser.id).status_tier;
+    if (tierRank(tier.id) <= tierRank(currentStatusTier)) {
+      return res.status(400).json({ error: 'You already have this status or a higher one' });
+    }
     if (getBalance(tgUser.id) < tier.price) return res.status(400).json({ error: 'Insufficient Stars balance' });
 
     try {
