@@ -131,7 +131,7 @@ export function Lobby({
       {(leaderboard.leaderboard.length > 0 || leaderboard.lastPrize) && (
         <div className="lobby-section">
           <div className="lobby-section-title">Weekly Leaderboard</div>
-          <div className="lobby-hint">Top player each week wins a real Telegram gift, sent by the bot.</div>
+          <div className="lobby-hint">Top player each week wins a real Telegram gift worth ~50% of the Stars purchased this week, sent by the bot.</div>
           {leaderboard.lastPrize && (
             <div className="prize-banner">
               🎁 Last week's winner: <strong>{leaderboard.lastPrize.displayName}</strong> — a ⭐{leaderboard.lastPrize.starCount} gift

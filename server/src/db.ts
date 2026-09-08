@@ -142,6 +142,14 @@ export function getLeaderboard(limit = 20, since?: string): LeaderboardEntry[] {
   return rows;
 }
 
+/** Total real Stars purchased (bot revenue) since a given timestamp — what actually landed in the bot's own Star balance. */
+export function getRevenueSince(since: string): number {
+  const row = db
+    .prepare("SELECT COALESCE(SUM(amount), 0) as total FROM star_transactions WHERE reason = 'stars_purchase' AND created_at >= ?")
+    .get(since) as { total: number };
+  return row.total;
+}
+
 export interface PrizeHistoryEntry {
   telegramId: number;
   displayName: string;

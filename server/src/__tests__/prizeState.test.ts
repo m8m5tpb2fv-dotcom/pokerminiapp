@@ -40,3 +40,26 @@ describe('prize period + history', () => {
     expect(db.getLastPrize()?.telegramId).toBe(99);
   });
 });
+
+describe('getRevenueSince', () => {
+  it('sums only stars_purchase transactions at or after the given timestamp', () => {
+    db.getOrCreateUser(700, 'buyer');
+    // Insert with explicit timestamps to avoid same-second flakiness in a fast-running test.
+    db.db
+      .prepare("INSERT INTO star_transactions (telegram_id, amount, reason, created_at) VALUES (700, 100, 'stars_purchase', '2020-01-01 00:00:00')")
+      .run();
+    db.db
+      .prepare("INSERT INTO star_transactions (telegram_id, amount, reason, created_at) VALUES (700, 60, 'stars_purchase', '2099-01-01 00:00:00')")
+      .run();
+    db.db
+      .prepare("INSERT INTO star_transactions (telegram_id, amount, reason, created_at) VALUES (700, -30, 'buy_in', '2099-01-01 00:00:00')")
+      .run();
+
+    expect(db.getRevenueSince('2099-01-01 00:00:00')).toBe(60); // excludes the 2020 purchase and the buy_in
+    expect(db.getRevenueSince('2020-01-01 00:00:00')).toBe(160); // includes both purchases
+  });
+
+  it('returns 0 when there is nothing in range', () => {
+    expect(db.getRevenueSince('2199-01-01 00:00:00')).toBe(0);
+  });
+});
