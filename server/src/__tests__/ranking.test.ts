@@ -103,3 +103,22 @@ describe('grantRankForTesting', () => {
     expect(() => ranking.grantRankForTesting(7, 'diamond')).toThrow(/unknown rank/i);
   });
 });
+
+describe('rank/status linking', () => {
+  it('unlocks free-switch ownership of every status tier a rank promotion passes through', () => {
+    db.getOrCreateUser(8, 'frank');
+    expect(db.getOwnedStatusTiers(8)).toEqual([]);
+
+    ranking.grantRankForTesting(8, 'gold'); // crosses bronze, silver, gold
+
+    expect(db.getOwnedStatusTiers(8).sort()).toEqual(['bronze', 'gold', 'silver']);
+    expect(db.hasOwnedStatusTier(8, 'vip')).toBe(false); // not reached yet
+  });
+
+  it('does not unlock a status tier the rank has not reached', () => {
+    db.getOrCreateUser(9, 'grace');
+    ranking.awardHandPoints([9], [9]); // 60 points, far below Bronze
+
+    expect(db.getOwnedStatusTiers(9)).toEqual([]);
+  });
+});

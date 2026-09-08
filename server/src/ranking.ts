@@ -1,4 +1,4 @@
-import { addPoints, adjustBalance, getOrCreateUser, setRankTier } from './db.js';
+import { addPoints, adjustBalance, getAllRankedTelegramIds, getOrCreateUser, recordStatusPurchase, setRankTier } from './db.js';
 import { RANK_TIERS, tierForPoints } from './rankTiers.js';
 
 export const HAND_PARTICIPATION_POINTS = 10;
@@ -18,6 +18,15 @@ function grantPointsAndMaybePromote(telegramId: number, gain: number): void {
   promoteIfNeeded(telegramId, points, previousRankTier);
 }
 
+/**
+ * Rank and the purchasable status share the same tier ids (bronze/silver/gold/vip), so reaching a
+ * rank also unlocks free-switch ownership of the matching status badge — earning your way to VIP
+ * shouldn't leave you unable to wear it just because you never separately bought it with Stars.
+ */
+function unlockStatusTiersUpTo(telegramId: number, uptoIndex: number): void {
+  for (let i = 0; i <= uptoIndex; i++) recordStatusPurchase(telegramId, RANK_TIERS[i].id);
+}
+
 function promoteIfNeeded(telegramId: number, points: number, previousRankTier: string | null): void {
   const newTier = tierForPoints(points);
   if (!newTier || newTier.id === previousRankTier) return;
@@ -29,6 +38,7 @@ function promoteIfNeeded(telegramId: number, points: number, previousRankTier: s
   for (let i = prevIndex + 1; i <= newIndex; i++) {
     adjustBalance(telegramId, RANK_TIERS[i].bonus, 'rank_bonus');
   }
+  unlockStatusTiersUpTo(telegramId, newIndex);
   setRankTier(telegramId, newTier.id);
 }
 
@@ -36,15 +46,31 @@ function promoteIfNeeded(telegramId: number, points: number, previousRankTier: s
 export function grantRankForTesting(telegramId: number, rankId: string): { points: number; rankTier: string | null } {
   const target = RANK_TIERS.find((t) => t.id === rankId);
   if (!target) throw new Error('Unknown rank tier');
+  const targetIndex = RANK_TIERS.indexOf(target);
 
   const user = getOrCreateUser(telegramId);
   const delta = target.threshold - user.points;
   if (delta > 0) {
     grantPointsAndMaybePromote(telegramId, delta);
-  } else if (user.rank_tier !== target.id && tierForPoints(user.points)?.id === target.id) {
-    setRankTier(telegramId, target.id);
+  } else {
+    unlockStatusTiersUpTo(telegramId, targetIndex);
+    if (user.rank_tier !== target.id && tierForPoints(user.points)?.id === target.id) {
+      setRankTier(telegramId, target.id);
+    }
   }
 
   const fresh = getOrCreateUser(telegramId);
   return { points: fresh.points, rankTier: fresh.rank_tier };
 }
+
+/**
+ * One-time backfill so a player who reached a rank before status-unlocking existed still gets
+ * free-switch ownership of every status tier their rank has already passed.
+ */
+function backfillStatusOwnershipFromRanks(): void {
+  for (const { telegramId, rankTier } of getAllRankedTelegramIds()) {
+    const idx = RANK_TIERS.findIndex((t) => t.id === rankTier);
+    if (idx >= 0) unlockStatusTiersUpTo(telegramId, idx);
+  }
+}
+backfillStatusOwnershipFromRanks();
