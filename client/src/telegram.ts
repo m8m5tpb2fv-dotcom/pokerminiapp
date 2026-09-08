@@ -5,6 +5,7 @@ interface TelegramWebApp {
   colorScheme: 'light' | 'dark';
   openInvoice: (url: string, callback: (status: string) => void) => void;
   showAlert?: (message: string) => void;
+  showConfirm?: (message: string, callback: (ok: boolean) => void) => void;
   HapticFeedback?: { impactOccurred: (style: string) => void; notificationOccurred: (type: string) => void };
 }
 
@@ -54,6 +55,17 @@ export function openInvoice(url: string): Promise<string> {
       return;
     }
     webApp.openInvoice(url, (status) => resolve(status));
+  });
+}
+
+/** Uses Telegram's native confirm dialog when available, falling back to the browser's for local dev. */
+export function showConfirm(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (webApp?.showConfirm) {
+      webApp.showConfirm(message, resolve);
+      return;
+    }
+    resolve(window.confirm(message));
   });
 }
 

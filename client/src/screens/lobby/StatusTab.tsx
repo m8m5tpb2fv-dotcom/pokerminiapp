@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { purchaseStatus } from '../../api';
+import { showConfirm } from '../../telegram';
 import { pokerSocket } from '../../ws';
 import type { RankTier, StatusTier, User } from '../../types';
 
@@ -58,11 +59,16 @@ export function StatusTab({ user, statusTiers, rankTiers, onUserChange }: Props)
   const [purchasingStatus, setPurchasingStatus] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
-  async function buyStatus(tierId: string): Promise<void> {
-    setPurchasingStatus(tierId);
+  async function buyStatus(tier: StatusTier): Promise<void> {
+    const isOwned = user.ownedStatusTiers.includes(tier.id);
+    if (!isOwned) {
+      const confirmed = await showConfirm(`Buy the ${tier.label} status for ⭐${tier.price}?`);
+      if (!confirmed) return;
+    }
+    setPurchasingStatus(tier.id);
     setStatusError(null);
     try {
-      onUserChange(await purchaseStatus(tierId));
+      onUserChange(await purchaseStatus(tier.id));
       pokerSocket.reauth();
     } catch (err) {
       setStatusError((err as Error).message);
@@ -93,7 +99,7 @@ export function StatusTab({ user, statusTiers, rankTiers, onUserChange }: Props)
                 className={`status-shop-item ${isOwned && !isCurrent ? 'status-shop-item-owned' : ''}`}
                 style={{ borderColor: tier.color }}
                 disabled={purchasingStatus !== null || isCurrent || isLocked || !canAfford}
-                onClick={() => buyStatus(tier.id)}
+                onClick={() => buyStatus(tier)}
               >
                 <span style={{ color: tier.color }}>{tier.label}</span>
                 <span>{isCurrent ? 'Active' : isOwned ? 'Switch' : isLocked ? 'Locked' : `⭐ ${tier.price}`}</span>
