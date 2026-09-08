@@ -36,6 +36,7 @@ export function NicknameScreen({ user, onDone, onCancel }: Props) {
   return (
     <div className="nickname-screen">
       <div className="nickname-card">
+        <img src="/logo-96.png" alt="" className="nickname-logo" />
         <div className="nickname-title">Choose your table name</div>
         <div className="nickname-hint">This is what other players will see at the table and on the leaderboard.</div>
         <input
@@ -53,7 +54,7 @@ export function NicknameScreen({ user, onDone, onCancel }: Props) {
               Cancel
             </button>
           )}
-          <button className="btn btn-package" onClick={save} disabled={saving || !isValid}>
+          <button className="btn btn-gold" onClick={save} disabled={saving || !isValid}>
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>

@@ -37,11 +37,14 @@ export function Lobby({
   return (
     <div className="lobby">
       <div className="lobby-header">
-        <div>
-          <div className="lobby-title">Stars Poker</div>
-          <button className="lobby-name-button" onClick={onEditNickname}>
-            {user.displayName} <StatusBadge tierId={user.statusTier} tiers={statusTiers} /> · edit
-          </button>
+        <div className="brand-row">
+          <img src="/logo-96.png" alt="" className="lobby-logo" />
+          <div>
+            <div className="lobby-title">Stars Poker</div>
+            <button className="lobby-name-button" onClick={onEditNickname}>
+              {user.displayName} <StatusBadge tierId={user.statusTier} tiers={statusTiers} /> · edit
+            </button>
+          </div>
         </div>
         <div className="lobby-balance">⭐ {user.starsBalance}</div>
       </div>

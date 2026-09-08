@@ -93,7 +93,7 @@ export function TournamentCard({ user, onEnterTournament }: Props) {
 
       {info.status === 'scheduled' && (
         <button
-          className={info.isRegistered ? 'btn btn-tournament-leave' : 'btn btn-tournament'}
+          className={info.isRegistered ? 'btn btn-tournament-leave' : 'btn btn-gold btn-tournament'}
           disabled={busy || (!info.isRegistered && user.starsBalance < info.buyIn)}
           onClick={toggleRegister}
         >
