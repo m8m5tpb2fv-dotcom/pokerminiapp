@@ -56,7 +56,14 @@ export default function App() {
   }, [activeTable]);
 
   if (loadError) return <div className="fatal-error">Failed to load: {loadError}</div>;
-  if (!user) return <div className="loading">Loading…</div>;
+  if (!user) {
+    return (
+      <div className="loading">
+        <img src="/logo-180.png" alt="" className="loading-logo" />
+        <div className="loading-spinner" />
+      </div>
+    );
+  }
 
   if (!user.nickname || editingNickname) {
     return (

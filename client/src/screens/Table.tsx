@@ -132,6 +132,7 @@ export function TableScreen({ summary, user, statusTiers, onBalanceChange, onLea
                 onSit={sit}
                 canSit={!mySeat && emptySeatIndexes.includes(seatIndex)}
                 statusTiers={statusTiers}
+                handNumber={view?.handNumber}
               />
             </div>
           );
