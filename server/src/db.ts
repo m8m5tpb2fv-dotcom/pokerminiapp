@@ -63,6 +63,35 @@ export function grantDevStarterBalanceIfEmpty(telegramId: number, amount = 1000)
   if (balance === 0) adjustBalance(telegramId, amount, 'dev_starter_grant');
 }
 
+export interface LeaderboardEntry {
+  telegramId: number;
+  displayName: string;
+  netWinnings: number;
+}
+
+/**
+ * Ranks players by lifetime net profit at the tables (cash-outs minus buy-ins),
+ * which deliberately excludes Stars purchases so this reflects poker skill/luck
+ * rather than spending power.
+ */
+export function getLeaderboard(limit = 20): LeaderboardEntry[] {
+  const rows = db
+    .prepare(
+      `SELECT u.telegram_id as telegramId,
+              COALESCE(u.username, u.first_name, 'Player ' || u.telegram_id) as displayName,
+              SUM(t.amount) as netWinnings
+       FROM star_transactions t
+       JOIN users u ON u.telegram_id = t.telegram_id
+       WHERE t.reason IN ('buy_in', 'cash_out')
+       GROUP BY t.telegram_id
+       HAVING netWinnings != 0
+       ORDER BY netWinnings DESC
+       LIMIT ?`
+    )
+    .all(limit) as LeaderboardEntry[];
+  return rows;
+}
+
 /** Adjust a user's star balance atomically; throws if it would go negative. */
 export function adjustBalance(telegramId: number, delta: number, reason: string, chargeId?: string): number {
   const tx = db.transaction(() => {

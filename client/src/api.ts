@@ -1,6 +1,6 @@
 import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
-import type { TableSummary, User } from './types';
+import type { LeaderboardEntry, TableSummary, User } from './types';
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${SERVER_URL}/api${path}`, {
@@ -22,6 +22,12 @@ export async function fetchTables(): Promise<TableSummary[]> {
   const res = await fetch(`${SERVER_URL}/api/tables`);
   const data = await res.json();
   return data.tables as TableSummary[];
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
+  const res = await fetch(`${SERVER_URL}/api/leaderboard`);
+  const data = await res.json();
+  return data.leaderboard as LeaderboardEntry[];
 }
 
 export async function requestStarsInvoice(stars: number): Promise<string> {

@@ -10,6 +10,12 @@ export interface User {
   starsBalance: number;
 }
 
+export interface LeaderboardEntry {
+  telegramId: number;
+  displayName: string;
+  netWinnings: number;
+}
+
 export interface TableSummary {
   tableId: string;
   smallBlind: number;

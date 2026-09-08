@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { authenticate, fetchTables } from './api';
+import { authenticate, fetchLeaderboard, fetchTables } from './api';
 import { initTelegram } from './telegram';
 import { pokerSocket } from './ws';
 import { Lobby } from './screens/Lobby';
 import { TableScreen } from './screens/Table';
-import type { TableSummary, User } from './types';
+import type { LeaderboardEntry, TableSummary, User } from './types';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [tables, setTables] = useState<TableSummary[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [activeTable, setActiveTable] = useState<TableSummary | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -18,10 +19,11 @@ export default function App() {
     const off = pokerSocket.on((msg) => {
       if (msg.type === 'auth_ok') setUser(msg.user);
     });
-    Promise.all([authenticate(), fetchTables()])
-      .then(([u, t]) => {
+    Promise.all([authenticate(), fetchTables(), fetchLeaderboard()])
+      .then(([u, t, l]) => {
         setUser(u);
         setTables(t);
+        setLeaderboard(l);
       })
       .catch((err) => setLoadError(err.message));
     return off;
@@ -37,7 +39,10 @@ export default function App() {
 
   useEffect(() => {
     if (activeTable) return;
-    const interval = setInterval(() => fetchTables().then(setTables).catch(() => {}), 5000);
+    const interval = setInterval(() => {
+      fetchTables().then(setTables).catch(() => {});
+      fetchLeaderboard().then(setLeaderboard).catch(() => {});
+    }, 5000);
     return () => clearInterval(interval);
   }, [activeTable]);
 
@@ -53,10 +58,13 @@ export default function App() {
         onLeave={() => {
           setActiveTable(null);
           refreshUser();
+          fetchLeaderboard().then(setLeaderboard).catch(() => {});
         }}
       />
     );
   }
 
-  return <Lobby user={user} tables={tables} onSelectTable={setActiveTable} onBalanceRefresh={refreshUser} />;
+  return (
+    <Lobby user={user} tables={tables} leaderboard={leaderboard} onSelectTable={setActiveTable} onBalanceRefresh={refreshUser} />
+  );
 }

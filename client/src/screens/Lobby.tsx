@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { requestStarsInvoice } from '../api';
 import { openInvoice, isRealTelegramClient } from '../telegram';
-import type { TableSummary, User } from '../types';
+import type { LeaderboardEntry, TableSummary, User } from '../types';
 
 const STAR_PACKAGES = [50, 100, 250, 500, 1000];
 
 interface Props {
   user: User;
   tables: TableSummary[];
+  leaderboard: LeaderboardEntry[];
   onSelectTable: (table: TableSummary) => void;
   onBalanceRefresh: () => void;
 }
 
-export function Lobby({ user, tables, onSelectTable, onBalanceRefresh }: Props) {
+export function Lobby({ user, tables, leaderboard, onSelectTable, onBalanceRefresh }: Props) {
   const [buying, setBuying] = useState<number | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
 
@@ -70,6 +71,27 @@ export function Lobby({ user, tables, onSelectTable, onBalanceRefresh }: Props) 
           ))}
         </div>
       </div>
+
+      {leaderboard.length > 0 && (
+        <div className="lobby-section">
+          <div className="lobby-section-title">Leaderboard</div>
+          <div className="leaderboard-list">
+            {leaderboard.map((entry, i) => (
+              <div
+                key={entry.telegramId}
+                className={`leaderboard-row ${entry.telegramId === user.telegramId ? 'leaderboard-row-me' : ''}`}
+              >
+                <div className="leaderboard-rank">#{i + 1}</div>
+                <div className="leaderboard-name">{entry.displayName}</div>
+                <div className={`leaderboard-net ${entry.netWinnings >= 0 ? 'leaderboard-net-positive' : 'leaderboard-net-negative'}`}>
+                  {entry.netWinnings >= 0 ? '+' : ''}
+                  {entry.netWinnings}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

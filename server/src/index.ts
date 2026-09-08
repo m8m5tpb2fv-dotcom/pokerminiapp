@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import http from 'node:http';
 import { authRouter } from './routes/auth.js';
+import { leaderboardRouter } from './routes/leaderboard.js';
 import { starsRouter, telegramWebhookRouter } from './routes/stars.js';
 import { tablesRouter } from './routes/tables.js';
 import { TableManager } from './tableManager.js';
@@ -26,6 +27,7 @@ app.use('/api', authRouter(BOT_TOKEN));
 app.use('/api', starsRouter(BOT_TOKEN));
 app.use('/api', telegramWebhookRouter(BOT_TOKEN));
 app.use('/api', tablesRouter(tableManager));
+app.use('/api', leaderboardRouter());
 
 const server = http.createServer(app);
 attachWebSocketServer(server, tableManager, BOT_TOKEN);
