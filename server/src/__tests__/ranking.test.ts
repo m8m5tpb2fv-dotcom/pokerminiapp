@@ -71,3 +71,35 @@ describe('awardHandPoints', () => {
     expect(db.getBalance(4)).toBe(balanceBefore + 10 + 50 + 100 + 500);
   });
 });
+
+describe('grantRankForTesting', () => {
+  it('fast-forwards a fresh player straight to VIP and pays every bonus along the way', () => {
+    const balanceBefore = db.getBalance(5); // 0, user doesn't exist yet
+    const result = ranking.grantRankForTesting(5, 'vip');
+
+    expect(result).toEqual({ points: 10000, rankTier: 'vip' });
+    expect(db.getBalance(5)).toBe(balanceBefore + 10 + 50 + 100 + 500);
+  });
+
+  it('tops up only the remaining points when the player already has some', () => {
+    db.getOrCreateUser(6, 'erin');
+    ranking.awardHandPoints([6], [6]); // 60 points, no rank yet
+    const balanceAfterHand = db.getBalance(6);
+
+    const result = ranking.grantRankForTesting(6, 'gold');
+
+    expect(result).toEqual({ points: 6000, rankTier: 'gold' });
+    // Bronze + Silver + Gold bonuses, since none had been paid yet.
+    expect(db.getBalance(6)).toBe(balanceAfterHand + 10 + 50 + 100);
+  });
+
+  it('is a no-op on balance when the player already has more points than the target', () => {
+    const result = ranking.grantRankForTesting(6, 'bronze'); // already Gold from the previous test
+    expect(result.points).toBe(6000);
+    expect(result.rankTier).toBe('gold'); // stays at the higher rank actually earned
+  });
+
+  it('rejects an unknown rank id', () => {
+    expect(() => ranking.grantRankForTesting(7, 'diamond')).toThrow(/unknown rank/i);
+  });
+});
