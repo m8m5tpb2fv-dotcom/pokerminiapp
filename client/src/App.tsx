@@ -7,7 +7,7 @@ import { NicknameScreen } from './screens/Nickname';
 import { TableScreen } from './screens/Table';
 import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
-const EMPTY_LEADERBOARD: LeaderboardData = { leaderboard: [], periodStart: '', lastPrize: null };
+const EMPTY_LEADERBOARD: LeaderboardData = { leaderboard: [], byTier: {}, periodStart: '', lastPrize: null };
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);

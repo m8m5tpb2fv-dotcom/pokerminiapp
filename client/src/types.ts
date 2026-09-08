@@ -37,6 +37,7 @@ export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  rankTier: string | null;
   avatarVersion: number | null;
   netWinnings: number;
 }
@@ -52,6 +53,7 @@ export interface LastPrize {
 
 export interface LeaderboardData {
   leaderboard: LeaderboardEntry[];
+  byTier: Record<string, LeaderboardEntry[]>;
   periodStart: string;
   lastPrize: LastPrize | null;
 }

@@ -1,10 +1,11 @@
-export type LobbyTab = 'tables' | 'topup' | 'status' | 'leaderboard' | 'profile';
+export type LobbyTab = 'tables' | 'topup' | 'status' | 'tournament' | 'leaderboard' | 'profile';
 
 const TABS: { id: LobbyTab; icon: string; label: string }[] = [
   { id: 'tables', icon: '🎮', label: 'Play' },
   { id: 'topup', icon: '⭐', label: 'Top Up' },
   { id: 'status', icon: '👑', label: 'Status' },
-  { id: 'leaderboard', icon: '🏆', label: 'Rating' },
+  { id: 'tournament', icon: '🏆', label: 'Tourney' },
+  { id: 'leaderboard', icon: '📊', label: 'Rating' },
   { id: 'profile', icon: '👤', label: 'Profile' },
 ];
 

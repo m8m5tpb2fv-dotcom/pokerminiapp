@@ -232,6 +232,7 @@ export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  rankTier: string | null;
   avatarVersion: number | null;
   netWinnings: number;
 }
@@ -239,26 +240,29 @@ export interface LeaderboardEntry {
 /**
  * Ranks players by lifetime net profit at the tables (cash-outs minus buy-ins),
  * which deliberately excludes Stars purchases so this reflects poker skill/luck
- * rather than spending power.
+ * rather than spending power. Pass `rankTier` to scope the board to players who
+ * currently hold that earned rank (Bronze/Silver/Gold/VIP), for the per-tier weekly boards.
  */
-export function getLeaderboard(limit = 20, since?: string): LeaderboardEntry[] {
+export function getLeaderboard(limit = 20, since?: string, rankTier?: string): LeaderboardEntry[] {
   const rows = db
     .prepare(
       `SELECT u.telegram_id as telegramId,
               COALESCE(u.nickname, u.username, u.first_name, 'Player ' || u.telegram_id) as displayName,
               u.status_tier as statusTier,
+              u.rank_tier as rankTier,
               CAST(strftime('%s', a.updated_at) AS INTEGER) * 1000 as avatarVersion,
               SUM(t.amount) as netWinnings
        FROM star_transactions t
        JOIN users u ON u.telegram_id = t.telegram_id
        LEFT JOIN avatars a ON a.telegram_id = u.telegram_id
        WHERE t.reason IN ('buy_in', 'cash_out') AND t.created_at >= ?
+             ${rankTier ? 'AND u.rank_tier = ?' : ''}
        GROUP BY t.telegram_id
        HAVING netWinnings != 0
        ORDER BY netWinnings DESC
        LIMIT ?`
     )
-    .all(since ?? '0000-00-00', limit) as LeaderboardEntry[];
+    .all(...(rankTier ? [since ?? '0000-00-00', rankTier, limit] : [since ?? '0000-00-00', limit])) as LeaderboardEntry[];
   return rows;
 }
 
