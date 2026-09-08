@@ -57,3 +57,30 @@ describe('setStatusTier', () => {
     expect(updated.status_tier).toBe('gold');
   });
 });
+
+describe('status ownership', () => {
+  it('tracks every tier ever recorded as purchased, plus the current tier', () => {
+    db.getOrCreateUser(503, 'collector');
+    expect(db.getOwnedStatusTiers(503)).toEqual([]);
+
+    db.recordStatusPurchase(503, 'bronze');
+    db.setStatusTier(503, 'bronze');
+    expect(db.hasOwnedStatusTier(503, 'bronze')).toBe(true);
+    expect(db.hasOwnedStatusTier(503, 'gold')).toBe(false);
+
+    db.recordStatusPurchase(503, 'gold');
+    db.setStatusTier(503, 'gold');
+    expect(db.getOwnedStatusTiers(503).sort()).toEqual(['bronze', 'gold']);
+
+    // Recording the same tier twice doesn't duplicate it.
+    db.recordStatusPurchase(503, 'gold');
+    expect(db.getOwnedStatusTiers(503).sort()).toEqual(['bronze', 'gold']);
+  });
+
+  it('counts a pre-existing status_tier as owned even without a purchases row', () => {
+    db.getOrCreateUser(504, 'legacy');
+    db.setStatusTier(504, 'silver'); // simulates data from before status_purchases existed
+    expect(db.getOwnedStatusTiers(504)).toEqual(['silver']);
+    expect(db.hasOwnedStatusTier(504, 'silver')).toBe(false); // no purchase row recorded
+  });
+});

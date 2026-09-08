@@ -1,3 +1,4 @@
+import { Avatar } from './Avatar';
 import { Card, CardBack } from './Card';
 import { StatusBadge } from './StatusBadge';
 import type { PublicSeatView, StatusTier } from '../types';
@@ -39,6 +40,7 @@ export function Seat({ seat, seatIndex, isButton, isToAct, isMe, onSit, canSit, 
           : (seat.holeCards ?? []).map((c) => <Card key={c} code={c} />)}
       </div>
       <div className="seat-info">
+        <Avatar telegramId={seat.telegramId} avatarVersion={seat.avatarVersion} displayName={seat.displayName} size={26} />
         <div className="seat-name">
           {seat.displayName}
           {isMe ? ' (you)' : ''}

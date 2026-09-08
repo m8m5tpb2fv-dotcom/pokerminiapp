@@ -12,6 +12,7 @@ export interface Seat {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  avatarVersion: number | null;
   stack: number;
   status: PlayerStatus;
   holeCards: CardCode[];
@@ -42,6 +43,7 @@ export interface PublicSeatView {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  avatarVersion: number | null;
   stack: number;
   status: PlayerStatus;
   committedThisStreet: number;

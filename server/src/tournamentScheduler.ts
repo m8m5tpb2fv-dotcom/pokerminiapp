@@ -1,4 +1,4 @@
-import { adjustBalance } from './db.js';
+import { adjustBalance, getAvatarVersion } from './db.js';
 import { pickGiftBundleWithinBudget } from './prizeScheduler.js';
 import type { TableManager } from './tableManager.js';
 import { getAvailableGifts, getMyStarBalance, sendGift } from './telegram.js';
@@ -57,7 +57,9 @@ export function startTournament(tableManager: TableManager): void {
     return;
   }
 
-  entries.forEach((e, i) => table.sitDown(i, e.telegramId, e.displayName, TOURNAMENT_BUY_IN, null, false));
+  entries.forEach((e, i) =>
+    table.sitDown(i, e.telegramId, e.displayName, TOURNAMENT_BUY_IN, null, false, getAvatarVersion(e.telegramId))
+  );
   table.startIfReady();
   clearEntries();
   setTournamentStatus('running');

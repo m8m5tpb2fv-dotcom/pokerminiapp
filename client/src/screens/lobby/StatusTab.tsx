@@ -76,22 +76,27 @@ export function StatusTab({ user, statusTiers, rankTiers, onUserChange }: Props)
       <RankProgress user={user} rankTiers={rankTiers} />
       <div className="lobby-section">
         <div className="lobby-section-title">Status</div>
-        <div className="lobby-hint">Cosmetic rank shown next to your name at the table and on the leaderboard. Paid for with your Stars balance.</div>
+        <div className="lobby-hint">
+          Cosmetic rank shown next to your name at the table and on the leaderboard. Paid for with your Stars
+          balance — once bought, you can switch back to any status you own for free.
+        </div>
         <div className="status-shop">
           {statusTiers.map((tier, i) => {
             const currentRank = statusTiers.findIndex((t) => t.id === user.statusTier);
             const isCurrent = user.statusTier === tier.id;
-            const isLower = !isCurrent && i <= currentRank;
+            const isOwned = user.ownedStatusTiers.includes(tier.id);
+            const isLocked = !isOwned && i <= currentRank;
+            const canAfford = isOwned || user.starsBalance >= tier.price;
             return (
               <button
                 key={tier.id}
-                className="status-shop-item"
+                className={`status-shop-item ${isOwned && !isCurrent ? 'status-shop-item-owned' : ''}`}
                 style={{ borderColor: tier.color }}
-                disabled={purchasingStatus !== null || isCurrent || isLower || user.starsBalance < tier.price}
+                disabled={purchasingStatus !== null || isCurrent || isLocked || !canAfford}
                 onClick={() => buyStatus(tier.id)}
               >
                 <span style={{ color: tier.color }}>{tier.label}</span>
-                <span>{isCurrent ? 'Active' : isLower ? 'Included' : `⭐ ${tier.price}`}</span>
+                <span>{isCurrent ? 'Active' : isOwned ? 'Switch' : isLocked ? 'Locked' : `⭐ ${tier.price}`}</span>
               </button>
             );
           })}

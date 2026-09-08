@@ -1,7 +1,15 @@
 import type { Server as HttpServer } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, displayNameFor, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty, toClientUser } from '../db.js';
+import {
+  adjustBalance,
+  displayNameFor,
+  getAvatarVersion,
+  getBalance,
+  getOrCreateUser,
+  grantDevStarterBalanceIfEmpty,
+  toClientUser,
+} from '../db.js';
 import type { ActionType } from '../poker/types.js';
 import type { TableManager } from '../tableManager.js';
 import { TOURNAMENT_TABLE_ID, getTournamentState } from '../tournamentDb.js';
@@ -184,7 +192,7 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
           }
           adjustBalance(state.telegramId, -buyIn, 'buy_in');
           try {
-            table.sitDown(seatIndex, state.telegramId, state.displayName, buyIn, state.statusTier);
+            table.sitDown(seatIndex, state.telegramId, state.displayName, buyIn, state.statusTier, true, getAvatarVersion(state.telegramId));
           } catch (err) {
             adjustBalance(state.telegramId, buyIn, 'buy_in_refund');
             send(ws, { type: 'error', message: (err as Error).message });

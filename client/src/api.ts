@@ -71,3 +71,9 @@ export async function fetchRankTiers(): Promise<RankTier[]> {
   const data = await res.json();
   return data.ranks as RankTier[];
 }
+
+/** `image` is a base64 data URL, already downscaled/cropped client-side. */
+export async function uploadAvatar(image: string): Promise<User> {
+  const { user } = await post<{ user: User }>('/avatar', { initData: getInitData(), image });
+  return user;
+}
