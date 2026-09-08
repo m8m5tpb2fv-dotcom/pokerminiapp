@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StatusBadge } from '../components/StatusBadge';
 import { TabBar, type LobbyTab } from '../components/TabBar';
 import { LeaderboardTab } from './lobby/LeaderboardTab';
+import { ProfileTab } from './lobby/ProfileTab';
 import { StatusTab } from './lobby/StatusTab';
 import { TablesTab } from './lobby/TablesTab';
 import { TopUpTab } from './lobby/TopUpTab';
@@ -57,6 +58,9 @@ export function Lobby({
         )}
         {tab === 'leaderboard' && (
           <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} onEnterTournament={onEnterTournament} />
+        )}
+        {tab === 'profile' && (
+          <ProfileTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} onEditNickname={onEditNickname} />
         )}
       </div>
 

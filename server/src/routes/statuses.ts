@@ -1,6 +1,14 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, getBalance, getOrCreateUser, setStatusTier, toClientUser } from '../db.js';
+import {
+  adjustBalance,
+  getBalance,
+  getOrCreateUser,
+  hasOwnedStatusTier,
+  recordStatusPurchase,
+  setStatusTier,
+  toClientUser,
+} from '../db.js';
 import { STATUS_TIERS, findStatusTier, tierRank } from '../statusTiers.js';
 
 export function statusesRouter(botToken: string | undefined): Router {
@@ -19,14 +27,21 @@ export function statusesRouter(botToken: string | undefined): Router {
     const tier = findStatusTier(statusId);
     if (!tier) return res.status(400).json({ error: 'Unknown status' });
 
-    const currentStatusTier = getOrCreateUser(tgUser.id).status_tier;
-    if (tierRank(tier.id) <= tierRank(currentStatusTier)) {
-      return res.status(400).json({ error: 'You already have this status or a higher one' });
-    }
-    if (getBalance(tgUser.id) < tier.price) return res.status(400).json({ error: 'Insufficient Stars balance' });
-
     try {
+      // Already paid for this tier at some point: switching back to it is always free.
+      if (hasOwnedStatusTier(tgUser.id, tier.id)) {
+        const user = setStatusTier(tgUser.id, tier.id);
+        return res.json({ user: toClientUser(user) });
+      }
+
+      const currentStatusTier = getOrCreateUser(tgUser.id).status_tier;
+      if (tierRank(tier.id) <= tierRank(currentStatusTier)) {
+        return res.status(400).json({ error: 'You already have this status or a higher one' });
+      }
+      if (getBalance(tgUser.id) < tier.price) return res.status(400).json({ error: 'Insufficient Stars balance' });
+
       adjustBalance(tgUser.id, -tier.price, 'status_purchase');
+      recordStatusPurchase(tgUser.id, tier.id);
       const user = setStatusTier(tgUser.id, tier.id);
       res.json({ user: toClientUser(user) });
     } catch (err) {

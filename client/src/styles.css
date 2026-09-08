@@ -350,7 +350,7 @@ button:disabled {
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 24px 26px 1fr auto;
   align-items: center;
   gap: 8px;
   background: var(--surface);
@@ -390,7 +390,7 @@ button:disabled {
 
 .tab-bar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   flex-shrink: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -499,6 +499,93 @@ button:disabled {
   font-weight: 700;
 }
 
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.avatar-fallback {
+  color: var(--gold);
+  font-weight: 800;
+  background: linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 100%);
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 8px;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+}
+
+.profile-avatar-edit {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gold-gradient);
+  border: 2px solid var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #241a00;
+  box-shadow: 0 2px 8px rgba(247, 201, 72, 0.35);
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.profile-username {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.profile-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.profile-info-row span:first-child {
+  color: var(--text-dim);
+}
+
+.profile-info-row span:last-child {
+  font-weight: 700;
+}
+
+.profile-info-row-button {
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
 .status-badge {
   display: inline-block;
   font-size: 10px;
@@ -534,6 +621,11 @@ button:disabled {
 
 .status-shop-item:disabled {
   opacity: 0.45;
+}
+
+.status-shop-item-owned {
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px rgba(247, 201, 72, 0.2);
 }
 
 .status-shop-item span:last-child {
@@ -866,7 +958,11 @@ button:disabled {
   background: rgba(5, 9, 15, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
-  padding: 3px 8px;
+  padding: 4px 8px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   text-align: center;
   min-width: 72px;
 }

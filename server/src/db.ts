@@ -43,6 +43,20 @@ db.exec(`
     net_winnings INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS status_purchases (
+    telegram_id INTEGER NOT NULL,
+    tier_id TEXT NOT NULL,
+    purchased_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (telegram_id, tier_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS avatars (
+    telegram_id INTEGER PRIMARY KEY,
+    data BLOB NOT NULL,
+    mime TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 db.prepare('INSERT OR IGNORE INTO prize_state (id, period_start) VALUES (1, datetime(\'now\'))').run();
@@ -98,6 +112,27 @@ export function setStatusTier(telegramId: number, statusTier: string): UserRow {
   return db.prepare('SELECT * FROM users WHERE telegram_id = ?').get(telegramId) as UserRow;
 }
 
+export function recordStatusPurchase(telegramId: number, tierId: string): void {
+  db.prepare('INSERT OR IGNORE INTO status_purchases (telegram_id, tier_id) VALUES (?, ?)').run(telegramId, tierId);
+}
+
+export function hasOwnedStatusTier(telegramId: number, tierId: string): boolean {
+  return Boolean(
+    db.prepare('SELECT 1 FROM status_purchases WHERE telegram_id = ? AND tier_id = ?').get(telegramId, tierId)
+  );
+}
+
+/** Every tier this player has ever paid for, plus their currently-set tier (covers pre-migration data). */
+export function getOwnedStatusTiers(telegramId: number): string[] {
+  const rows = db.prepare('SELECT tier_id FROM status_purchases WHERE telegram_id = ?').all(telegramId) as { tier_id: string }[];
+  const owned = new Set(rows.map((r) => r.tier_id));
+  const current = db.prepare('SELECT status_tier FROM users WHERE telegram_id = ?').get(telegramId) as
+    | { status_tier: string | null }
+    | undefined;
+  if (current?.status_tier) owned.add(current.status_tier);
+  return [...owned];
+}
+
 export function displayNameFor(user: Pick<UserRow, 'telegram_id' | 'username' | 'first_name' | 'nickname'>): string {
   return user.nickname ?? user.username ?? user.first_name ?? `Player ${user.telegram_id}`;
 }
@@ -108,10 +143,12 @@ export interface ClientUser {
   firstName: string | null;
   nickname: string | null;
   statusTier: string | null;
+  ownedStatusTiers: string[];
   displayName: string;
   starsBalance: number;
   points: number;
   rankTier: string | null;
+  avatarVersion: number | null;
 }
 
 export function toClientUser(user: UserRow): ClientUser {
@@ -121,11 +158,36 @@ export function toClientUser(user: UserRow): ClientUser {
     firstName: user.first_name,
     nickname: user.nickname,
     statusTier: user.status_tier,
+    ownedStatusTiers: getOwnedStatusTiers(user.telegram_id),
     displayName: displayNameFor(user),
     starsBalance: user.stars_balance,
     points: user.points,
     rankTier: user.rank_tier,
+    avatarVersion: getAvatarVersion(user.telegram_id),
   };
+}
+
+/** Stores a resized avatar image (the client is expected to have already downscaled/cropped it). */
+export function setAvatar(telegramId: number, data: Buffer, mime: string): void {
+  db.prepare(
+    `INSERT INTO avatars (telegram_id, data, mime, updated_at) VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT(telegram_id) DO UPDATE SET data = excluded.data, mime = excluded.mime, updated_at = excluded.updated_at`
+  ).run(telegramId, data, mime);
+}
+
+export function getAvatar(telegramId: number): { data: Buffer; mime: string } | null {
+  const row = db.prepare('SELECT data, mime FROM avatars WHERE telegram_id = ?').get(telegramId) as
+    | { data: Buffer; mime: string }
+    | undefined;
+  return row ?? null;
+}
+
+/** A cache-busting value (ms since epoch) for building `<img>` URLs; null when no avatar is set. */
+export function getAvatarVersion(telegramId: number): number | null {
+  const row = db.prepare("SELECT strftime('%s', updated_at) as ts FROM avatars WHERE telegram_id = ?").get(telegramId) as
+    | { ts: string }
+    | undefined;
+  return row ? Number(row.ts) * 1000 : null;
 }
 
 /** Adds points earned from playing hands; returns the new total and the rank tier held before this gain. */
@@ -163,6 +225,7 @@ export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  avatarVersion: number | null;
   netWinnings: number;
 }
 
@@ -177,9 +240,11 @@ export function getLeaderboard(limit = 20, since?: string): LeaderboardEntry[] {
       `SELECT u.telegram_id as telegramId,
               COALESCE(u.nickname, u.username, u.first_name, 'Player ' || u.telegram_id) as displayName,
               u.status_tier as statusTier,
+              CAST(strftime('%s', a.updated_at) AS INTEGER) * 1000 as avatarVersion,
               SUM(t.amount) as netWinnings
        FROM star_transactions t
        JOIN users u ON u.telegram_id = t.telegram_id
+       LEFT JOIN avatars a ON a.telegram_id = u.telegram_id
        WHERE t.reason IN ('buy_in', 'cash_out') AND t.created_at >= ?
        GROUP BY t.telegram_id
        HAVING netWinnings != 0

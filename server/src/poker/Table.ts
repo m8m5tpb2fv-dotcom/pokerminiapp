@@ -79,7 +79,8 @@ export class Table {
     displayName: string,
     buyIn: number,
     statusTier: string | null = null,
-    autoStart = true
+    autoStart = true,
+    avatarVersion: number | null = null
   ): void {
     if (seatIndex < 0 || seatIndex >= this.config.maxSeats) throw new Error('Invalid seat');
     if (this.seats.has(seatIndex)) throw new Error('Seat taken');
@@ -90,6 +91,7 @@ export class Table {
       telegramId,
       displayName,
       statusTier,
+      avatarVersion,
       stack: buyIn,
       status: 'active',
       holeCards: [],
@@ -435,6 +437,7 @@ export class Table {
         telegramId: s.telegramId,
         displayName: s.displayName,
         statusTier: s.statusTier,
+        avatarVersion: s.avatarVersion,
         stack: s.stack,
         status: s.status,
         committedThisStreet: s.committedThisStreet,

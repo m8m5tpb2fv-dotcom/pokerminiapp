@@ -9,10 +9,12 @@ export interface User {
   firstName: string | null;
   nickname: string | null;
   statusTier: string | null;
+  ownedStatusTiers: string[];
   displayName: string;
   starsBalance: number;
   points: number;
   rankTier: string | null;
+  avatarVersion: number | null;
 }
 
 export interface StatusTier {
@@ -35,6 +37,7 @@ export interface LeaderboardEntry {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  avatarVersion: number | null;
   netWinnings: number;
 }
 
@@ -91,6 +94,7 @@ export interface PublicSeatView {
   telegramId: number;
   displayName: string;
   statusTier: string | null;
+  avatarVersion: number | null;
   stack: number;
   status: PlayerStatus;
   committedThisStreet: number;

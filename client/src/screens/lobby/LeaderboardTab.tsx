@@ -1,3 +1,4 @@
+import { Avatar } from '../../components/Avatar';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { LeaderboardData, StatusTier, TournamentInfo, User } from '../../types';
 import { TournamentCard } from './TournamentCard';
@@ -32,6 +33,7 @@ export function LeaderboardTab({ user, leaderboard, statusTiers, onEnterTourname
               className={`leaderboard-row ${entry.telegramId === user.telegramId ? 'leaderboard-row-me' : ''}`}
             >
               <div className="leaderboard-rank">#{i + 1}</div>
+              <Avatar telegramId={entry.telegramId} avatarVersion={entry.avatarVersion} displayName={entry.displayName} size={26} />
               <div className="leaderboard-name">
                 {entry.displayName} <StatusBadge tierId={entry.statusTier} tiers={statusTiers} />
               </div>

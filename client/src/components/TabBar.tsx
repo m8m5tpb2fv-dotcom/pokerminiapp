@@ -1,10 +1,11 @@
-export type LobbyTab = 'tables' | 'topup' | 'status' | 'leaderboard';
+export type LobbyTab = 'tables' | 'topup' | 'status' | 'leaderboard' | 'profile';
 
 const TABS: { id: LobbyTab; icon: string; label: string }[] = [
   { id: 'tables', icon: '🎮', label: 'Play' },
   { id: 'topup', icon: '⭐', label: 'Top Up' },
   { id: 'status', icon: '👑', label: 'Status' },
   { id: 'leaderboard', icon: '🏆', label: 'Rating' },
+  { id: 'profile', icon: '👤', label: 'Profile' },
 ];
 
 export function TabBar({ active, onChange }: { active: LobbyTab; onChange: (tab: LobbyTab) => void }) {
