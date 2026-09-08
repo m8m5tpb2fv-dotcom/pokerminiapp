@@ -152,6 +152,51 @@ button {
   text-align: right;
 }
 
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid #2a3947;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.leaderboard-row-me {
+  border-color: var(--accent);
+}
+
+.leaderboard-rank {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.leaderboard-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-net {
+  font-weight: 700;
+}
+
+.leaderboard-net-positive {
+  color: var(--success);
+}
+
+.leaderboard-net-negative {
+  color: var(--danger);
+}
+
 .toast {
   padding: 8px 12px;
   border-radius: 8px;
