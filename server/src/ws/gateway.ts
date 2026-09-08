@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, displayNameFor, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
+import { adjustBalance, displayNameFor, getBalance, getOrCreateUser, grantDevStarterBalanceIfEmpty, toClientUser } from '../db.js';
 import type { ActionType } from '../poker/types.js';
 import type { TableManager } from '../tableManager.js';
 import { TOURNAMENT_TABLE_ID, getTournamentState } from '../tournamentDb.js';
@@ -129,18 +129,7 @@ export function attachWebSocketServer(server: HttpServer, tableManager: TableMan
           state.telegramId = user.telegram_id;
           state.displayName = displayNameFor(user);
           state.statusTier = user.status_tier;
-          send(ws, {
-            type: 'auth_ok',
-            user: {
-              telegramId: user.telegram_id,
-              username: user.username,
-              firstName: user.first_name,
-              nickname: user.nickname,
-              statusTier: user.status_tier,
-              displayName: state.displayName,
-              starsBalance: user.stars_balance,
-            },
-          });
+          send(ws, { type: 'auth_ok', user: toClientUser(user) });
           return;
         }
 

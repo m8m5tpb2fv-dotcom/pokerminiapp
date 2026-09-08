@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { displayNameFor, getOrCreateUser, grantDevStarterBalanceIfEmpty } from '../db.js';
+import { getOrCreateUser, grantDevStarterBalanceIfEmpty, toClientUser } from '../db.js';
 
 export function authRouter(botToken: string | undefined): Router {
   const router = Router();
@@ -16,17 +16,7 @@ export function authRouter(botToken: string | undefined): Router {
       grantDevStarterBalanceIfEmpty(user.telegram_id);
       user = getOrCreateUser(user.telegram_id);
     }
-    res.json({
-      user: {
-        telegramId: user.telegram_id,
-        username: user.username,
-        firstName: user.first_name,
-        nickname: user.nickname,
-        statusTier: user.status_tier,
-        displayName: displayNameFor(user),
-        starsBalance: user.stars_balance,
-      },
-    });
+    res.json({ user: toClientUser(user) });
   });
 
   return router;

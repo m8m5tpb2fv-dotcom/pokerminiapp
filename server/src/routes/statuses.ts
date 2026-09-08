@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { adjustBalance, displayNameFor, getBalance, setStatusTier } from '../db.js';
+import { adjustBalance, getBalance, setStatusTier, toClientUser } from '../db.js';
 import { STATUS_TIERS, findStatusTier } from '../statusTiers.js';
 
 export function statusesRouter(botToken: string | undefined): Router {
@@ -23,17 +23,7 @@ export function statusesRouter(botToken: string | undefined): Router {
     try {
       adjustBalance(tgUser.id, -tier.price, 'status_purchase');
       const user = setStatusTier(tgUser.id, tier.id);
-      res.json({
-        user: {
-          telegramId: user.telegram_id,
-          username: user.username,
-          firstName: user.first_name,
-          nickname: user.nickname,
-          statusTier: user.status_tier,
-          displayName: displayNameFor(user),
-          starsBalance: user.stars_balance,
-        },
-      });
+      res.json({ user: toClientUser(user) });
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

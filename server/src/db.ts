@@ -47,10 +47,12 @@ db.exec(`
 
 db.prepare('INSERT OR IGNORE INTO prize_state (id, period_start) VALUES (1, datetime(\'now\'))').run();
 
-// Lightweight migration for databases created before nickname/status_tier existed.
+// Lightweight migration for databases created before nickname/status_tier/points/rank_tier existed.
 const existingColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
 if (!existingColumns.has('nickname')) db.exec('ALTER TABLE users ADD COLUMN nickname TEXT');
 if (!existingColumns.has('status_tier')) db.exec('ALTER TABLE users ADD COLUMN status_tier TEXT');
+if (!existingColumns.has('points')) db.exec('ALTER TABLE users ADD COLUMN points INTEGER NOT NULL DEFAULT 0');
+if (!existingColumns.has('rank_tier')) db.exec('ALTER TABLE users ADD COLUMN rank_tier TEXT');
 
 export interface UserRow {
   telegram_id: number;
@@ -59,6 +61,8 @@ export interface UserRow {
   nickname: string | null;
   status_tier: string | null;
   stars_balance: number;
+  points: number;
+  rank_tier: string | null;
   created_at: string;
 }
 
@@ -96,6 +100,50 @@ export function setStatusTier(telegramId: number, statusTier: string): UserRow {
 
 export function displayNameFor(user: Pick<UserRow, 'telegram_id' | 'username' | 'first_name' | 'nickname'>): string {
   return user.nickname ?? user.username ?? user.first_name ?? `Player ${user.telegram_id}`;
+}
+
+export interface ClientUser {
+  telegramId: number;
+  username: string | null;
+  firstName: string | null;
+  nickname: string | null;
+  statusTier: string | null;
+  displayName: string;
+  starsBalance: number;
+  points: number;
+  rankTier: string | null;
+}
+
+export function toClientUser(user: UserRow): ClientUser {
+  return {
+    telegramId: user.telegram_id,
+    username: user.username,
+    firstName: user.first_name,
+    nickname: user.nickname,
+    statusTier: user.status_tier,
+    displayName: displayNameFor(user),
+    starsBalance: user.stars_balance,
+    points: user.points,
+    rankTier: user.rank_tier,
+  };
+}
+
+/** Adds points earned from playing hands; returns the new total and the rank tier held before this gain. */
+export function addPoints(telegramId: number, amount: number): { points: number; previousRankTier: string | null } {
+  const tx = db.transaction(() => {
+    const row = db.prepare('SELECT points, rank_tier FROM users WHERE telegram_id = ?').get(telegramId) as
+      | { points: number; rank_tier: string | null }
+      | undefined;
+    if (!row) throw new Error('User not found');
+    const next = row.points + amount;
+    db.prepare('UPDATE users SET points = ? WHERE telegram_id = ?').run(next, telegramId);
+    return { points: next, previousRankTier: row.rank_tier };
+  });
+  return tx();
+}
+
+export function setRankTier(telegramId: number, rankTier: string): void {
+  db.prepare('UPDATE users SET rank_tier = ? WHERE telegram_id = ?').run(rankTier, telegramId);
 }
 
 export function getBalance(telegramId: number): number {

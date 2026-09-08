@@ -359,6 +359,64 @@ button:disabled {
   color: var(--text-dim);
 }
 
+.rank-current {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.rank-none {
+  color: var(--text-dim);
+}
+
+.rank-points {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.rank-progress-bar {
+  background: var(--surface-2);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.rank-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.rank-tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.rank-tier-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid #2a3947;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.5;
+}
+
+.rank-tier-chip-done {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
 /* Nickname screen */
 .nickname-screen {
   min-height: 100vh;

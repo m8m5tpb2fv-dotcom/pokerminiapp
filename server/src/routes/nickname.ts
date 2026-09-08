@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateInitData } from '../authenticate.js';
-import { displayNameFor, setNickname } from '../db.js';
+import { setNickname, toClientUser } from '../db.js';
 
 export function nicknameRouter(botToken: string | undefined): Router {
   const router = Router();
@@ -13,17 +13,7 @@ export function nicknameRouter(botToken: string | undefined): Router {
 
     try {
       const user = setNickname(tgUser.id, nickname);
-      res.json({
-        user: {
-          telegramId: user.telegram_id,
-          username: user.username,
-          firstName: user.first_name,
-          nickname: user.nickname,
-          statusTier: user.status_tier,
-          displayName: displayNameFor(user),
-          starsBalance: user.stars_balance,
-        },
-      });
+      res.json({ user: toClientUser(user) });
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

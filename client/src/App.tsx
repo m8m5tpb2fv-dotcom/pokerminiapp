@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { authenticate, fetchLeaderboard, fetchStatusTiers, fetchTables } from './api';
+import { authenticate, fetchLeaderboard, fetchRankTiers, fetchStatusTiers, fetchTables } from './api';
 import { initTelegram } from './telegram';
 import { pokerSocket } from './ws';
 import { Lobby } from './screens/Lobby';
 import { NicknameScreen } from './screens/Nickname';
 import { TableScreen } from './screens/Table';
-import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from './types';
+import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
 const EMPTY_LEADERBOARD: LeaderboardData = { leaderboard: [], periodStart: '', lastPrize: null };
 
@@ -14,6 +14,7 @@ export default function App() {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardData>(EMPTY_LEADERBOARD);
   const [statusTiers, setStatusTiers] = useState<StatusTier[]>([]);
+  const [rankTiers, setRankTiers] = useState<RankTier[]>([]);
   const [activeTable, setActiveTable] = useState<TableSummary | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -24,12 +25,13 @@ export default function App() {
     const off = pokerSocket.on((msg) => {
       if (msg.type === 'auth_ok') setUser(msg.user);
     });
-    Promise.all([authenticate(), fetchTables(), fetchLeaderboard(), fetchStatusTiers()])
-      .then(([u, t, l, s]) => {
+    Promise.all([authenticate(), fetchTables(), fetchLeaderboard(), fetchStatusTiers(), fetchRankTiers()])
+      .then(([u, t, l, s, r]) => {
         setUser(u);
         setTables(t);
         setLeaderboard(l);
         setStatusTiers(s);
+        setRankTiers(r);
       })
       .catch((err) => setLoadError(err.message));
     return off;
@@ -48,6 +50,7 @@ export default function App() {
     const interval = setInterval(() => {
       fetchTables().then(setTables).catch(() => {});
       fetchLeaderboard().then(setLeaderboard).catch(() => {});
+      refreshUser();
     }, 5000);
     return () => clearInterval(interval);
   }, [activeTable]);
@@ -91,6 +94,7 @@ export default function App() {
       tables={tables}
       leaderboard={leaderboard}
       statusTiers={statusTiers}
+      rankTiers={rankTiers}
       onSelectTable={setActiveTable}
       onBalanceRefresh={refreshUser}
       onUserChange={setUser}

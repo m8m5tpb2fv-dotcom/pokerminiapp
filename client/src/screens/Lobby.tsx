@@ -5,13 +5,14 @@ import { LeaderboardTab } from './lobby/LeaderboardTab';
 import { StatusTab } from './lobby/StatusTab';
 import { TablesTab } from './lobby/TablesTab';
 import { TopUpTab } from './lobby/TopUpTab';
-import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from '../types';
+import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from '../types';
 
 interface Props {
   user: User;
   tables: TableSummary[];
   leaderboard: LeaderboardData;
   statusTiers: StatusTier[];
+  rankTiers: RankTier[];
   onSelectTable: (table: TableSummary) => void;
   onBalanceRefresh: () => void;
   onUserChange: (user: User) => void;
@@ -24,6 +25,7 @@ export function Lobby({
   tables,
   leaderboard,
   statusTiers,
+  rankTiers,
   onSelectTable,
   onBalanceRefresh,
   onUserChange,
@@ -47,7 +49,9 @@ export function Lobby({
       <div className="lobby-content">
         {tab === 'tables' && <TablesTab tables={tables} onSelectTable={onSelectTable} />}
         {tab === 'topup' && <TopUpTab onBalanceRefresh={onBalanceRefresh} />}
-        {tab === 'status' && <StatusTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} />}
+        {tab === 'status' && (
+          <StatusTab user={user} statusTiers={statusTiers} rankTiers={rankTiers} onUserChange={onUserChange} />
+        )}
         {tab === 'leaderboard' && (
           <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} onEnterTournament={onEnterTournament} />
         )}
