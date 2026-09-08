@@ -2,6 +2,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import http from 'node:http';
+import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
 import { nicknameRouter } from './routes/nickname.js';
@@ -38,6 +39,7 @@ app.use('/api', nicknameRouter(BOT_TOKEN));
 app.use('/api', statusesRouter(BOT_TOKEN));
 app.use('/api', tournamentRouter(tableManager, BOT_TOKEN));
 app.use('/api', ranksRouter());
+app.use('/api', adminRouter(BOT_TOKEN));
 
 const server = http.createServer(app);
 attachWebSocketServer(server, tableManager, BOT_TOKEN);
