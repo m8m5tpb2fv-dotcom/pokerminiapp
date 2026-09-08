@@ -16,3 +16,9 @@ export const STATUS_TIERS: StatusTier[] = [
 export function findStatusTier(id: string): StatusTier | undefined {
   return STATUS_TIERS.find((t) => t.id === id);
 }
+
+/** Index within STATUS_TIERS, i.e. rank order (bronze < silver < gold < vip). -1 for no status. */
+export function tierRank(id: string | null): number {
+  if (!id) return -1;
+  return STATUS_TIERS.findIndex((t) => t.id === id);
+}

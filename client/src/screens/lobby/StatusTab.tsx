@@ -78,18 +78,23 @@ export function StatusTab({ user, statusTiers, rankTiers, onUserChange }: Props)
         <div className="lobby-section-title">Status</div>
         <div className="lobby-hint">Cosmetic rank shown next to your name at the table and on the leaderboard. Paid for with your Stars balance.</div>
         <div className="status-shop">
-          {statusTiers.map((tier) => (
-            <button
-              key={tier.id}
-              className="status-shop-item"
-              style={{ borderColor: tier.color }}
-              disabled={purchasingStatus !== null || user.statusTier === tier.id || user.starsBalance < tier.price}
-              onClick={() => buyStatus(tier.id)}
-            >
-              <span style={{ color: tier.color }}>{tier.label}</span>
-              <span>{user.statusTier === tier.id ? 'Active' : `⭐ ${tier.price}`}</span>
-            </button>
-          ))}
+          {statusTiers.map((tier, i) => {
+            const currentRank = statusTiers.findIndex((t) => t.id === user.statusTier);
+            const isCurrent = user.statusTier === tier.id;
+            const isLower = !isCurrent && i <= currentRank;
+            return (
+              <button
+                key={tier.id}
+                className="status-shop-item"
+                style={{ borderColor: tier.color }}
+                disabled={purchasingStatus !== null || isCurrent || isLower || user.starsBalance < tier.price}
+                onClick={() => buyStatus(tier.id)}
+              >
+                <span style={{ color: tier.color }}>{tier.label}</span>
+                <span>{isCurrent ? 'Active' : isLower ? 'Included' : `⭐ ${tier.price}`}</span>
+              </button>
+            );
+          })}
         </div>
         {statusError && <div className="toast toast-error">{statusError}</div>}
       </div>
