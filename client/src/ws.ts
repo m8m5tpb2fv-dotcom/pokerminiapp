@@ -1,3 +1,4 @@
+import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
 import type { ActionType, TableStateView, User } from './types';
 
@@ -16,8 +17,10 @@ export class PokerSocket {
 
   connect(): void {
     if (this.ws && this.ws.readyState <= WebSocket.OPEN) return; // already connecting/connected
-    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${protocol}://${location.host}/ws`);
+    const wsUrl = SERVER_URL
+      ? `${SERVER_URL.replace(/^http/, 'ws')}/ws`
+      : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+    const socket = new WebSocket(wsUrl);
     this.ws = socket;
     socket.addEventListener('open', () => {
       this.send({ type: 'auth', initData: getInitData() });

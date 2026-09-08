@@ -1,8 +1,9 @@
+import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
 import type { TableSummary, User } from './types';
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${SERVER_URL}/api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -18,7 +19,7 @@ export async function authenticate(): Promise<User> {
 }
 
 export async function fetchTables(): Promise<TableSummary[]> {
-  const res = await fetch('/api/tables');
+  const res = await fetch(`${SERVER_URL}/api/tables`);
   const data = await res.json();
   return data.tables as TableSummary[];
 }
