@@ -6,6 +6,7 @@ import { ProfileTab } from './lobby/ProfileTab';
 import { StatusTab } from './lobby/StatusTab';
 import { TablesTab } from './lobby/TablesTab';
 import { TopUpTab } from './lobby/TopUpTab';
+import { TournamentTab } from './lobby/TournamentTab';
 import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from '../types';
 
 interface Props {
@@ -58,14 +59,11 @@ export function Lobby({
         {tab === 'status' && (
           <StatusTab user={user} statusTiers={statusTiers} rankTiers={rankTiers} onUserChange={onUserChange} />
         )}
+        {tab === 'tournament' && (
+          <TournamentTab user={user} tournament={tournament} onTournamentChange={onTournamentChange} />
+        )}
         {tab === 'leaderboard' && (
-          <LeaderboardTab
-            user={user}
-            leaderboard={leaderboard}
-            statusTiers={statusTiers}
-            tournament={tournament}
-            onTournamentChange={onTournamentChange}
-          />
+          <LeaderboardTab user={user} leaderboard={leaderboard} statusTiers={statusTiers} rankTiers={rankTiers} />
         )}
         {tab === 'profile' && (
           <ProfileTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} onEditNickname={onEditNickname} />

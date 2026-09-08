@@ -55,4 +55,23 @@ describe('getLeaderboard', () => {
     }
     expect(db.getLeaderboard(5)).toHaveLength(5);
   });
+
+  it('scopes the board to a single rank tier when one is given', () => {
+    db.getOrCreateUser(200, 'goldie');
+    db.setRankTier(200, 'gold');
+    db.adjustBalance(200, 50, 'stars_purchase');
+    db.adjustBalance(200, -50, 'buy_in');
+    db.adjustBalance(200, 300, 'cash_out');
+
+    db.getOrCreateUser(201, 'bronzey');
+    db.setRankTier(201, 'bronze');
+    db.adjustBalance(201, 50, 'stars_purchase');
+    db.adjustBalance(201, -50, 'buy_in');
+    db.adjustBalance(201, 300, 'cash_out');
+
+    const goldBoard = db.getLeaderboard(20, undefined, 'gold');
+    expect(goldBoard.map((e) => e.telegramId)).toContain(200);
+    expect(goldBoard.map((e) => e.telegramId)).not.toContain(201);
+    expect(goldBoard[0]).toMatchObject({ telegramId: 200, rankTier: 'gold' });
+  });
 });
