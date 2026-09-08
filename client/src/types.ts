@@ -52,6 +52,29 @@ export interface TableSummary {
   seatedCount: number;
 }
 
+export interface TournamentResult {
+  telegramId: number;
+  displayName: string;
+  giftId: string | null;
+  starCount: number | null;
+  prizePool: number;
+  players: number;
+  createdAt: string;
+}
+
+export interface TournamentInfo {
+  status: 'scheduled' | 'running';
+  nextStartAt: string;
+  buyIn: number;
+  maxSeats: number;
+  smallBlind: number;
+  bigBlind: number;
+  registeredCount: number;
+  isRegistered: boolean;
+  isSeated: boolean;
+  lastResult: TournamentResult | null;
+}
+
 export interface PublicSeatView {
   seatIndex: number;
   telegramId: number;

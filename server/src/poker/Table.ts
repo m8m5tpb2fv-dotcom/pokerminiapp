@@ -65,7 +65,14 @@ export class Table {
     return [...this.seats.values()].find((s) => s.telegramId === telegramId);
   }
 
-  sitDown(seatIndex: number, telegramId: number, displayName: string, buyIn: number, statusTier: string | null = null): void {
+  sitDown(
+    seatIndex: number,
+    telegramId: number,
+    displayName: string,
+    buyIn: number,
+    statusTier: string | null = null,
+    autoStart = true
+  ): void {
     if (seatIndex < 0 || seatIndex >= this.config.maxSeats) throw new Error('Invalid seat');
     if (this.seats.has(seatIndex)) throw new Error('Seat taken');
     if (this.getSeat(telegramId)) throw new Error('Already seated');
@@ -82,6 +89,11 @@ export class Table {
       committedTotal: 0,
       hasActedThisStreet: false,
     });
+    if (autoStart) this.maybeStartHand();
+  }
+
+  /** For seating a whole group at once (e.g. a tournament's starting field) without a hand starting mid-batch. */
+  startIfReady(): void {
     this.maybeStartHand();
   }
 

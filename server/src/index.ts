@@ -8,8 +8,10 @@ import { nicknameRouter } from './routes/nickname.js';
 import { starsRouter, telegramWebhookRouter } from './routes/stars.js';
 import { statusesRouter } from './routes/statuses.js';
 import { tablesRouter } from './routes/tables.js';
+import { tournamentRouter } from './routes/tournament.js';
 import { TableManager } from './tableManager.js';
 import { startPrizeScheduler } from './prizeScheduler.js';
+import { startTournamentScheduler } from './tournamentScheduler.js';
 import { attachWebSocketServer } from './ws/gateway.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -33,6 +35,7 @@ app.use('/api', tablesRouter(tableManager));
 app.use('/api', leaderboardRouter());
 app.use('/api', nicknameRouter(BOT_TOKEN));
 app.use('/api', statusesRouter(BOT_TOKEN));
+app.use('/api', tournamentRouter(tableManager, BOT_TOKEN));
 
 const server = http.createServer(app);
 attachWebSocketServer(server, tableManager, BOT_TOKEN);
@@ -42,3 +45,4 @@ server.listen(PORT, () => {
 });
 
 startPrizeScheduler(BOT_TOKEN);
+startTournamentScheduler(tableManager, BOT_TOKEN);

@@ -1,15 +1,19 @@
 import { StatusBadge } from '../../components/StatusBadge';
-import type { LeaderboardData, StatusTier, User } from '../../types';
+import type { LeaderboardData, StatusTier, TournamentInfo, User } from '../../types';
+import { TournamentCard } from './TournamentCard';
 
 interface Props {
   user: User;
   leaderboard: LeaderboardData;
   statusTiers: StatusTier[];
+  onEnterTournament: (info: TournamentInfo) => void;
 }
 
-export function LeaderboardTab({ user, leaderboard, statusTiers }: Props) {
+export function LeaderboardTab({ user, leaderboard, statusTiers, onEnterTournament }: Props) {
   return (
     <div className="lobby-section">
+      <TournamentCard user={user} onEnterTournament={onEnterTournament} />
+
       <div className="lobby-section-title">Weekly Leaderboard</div>
       <div className="lobby-hint">Top player each week wins a real Telegram gift worth ~50% of the Stars purchased this week, sent by the bot.</div>
       {leaderboard.lastPrize && (

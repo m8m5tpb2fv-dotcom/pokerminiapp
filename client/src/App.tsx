@@ -5,7 +5,7 @@ import { pokerSocket } from './ws';
 import { Lobby } from './screens/Lobby';
 import { NicknameScreen } from './screens/Nickname';
 import { TableScreen } from './screens/Table';
-import type { LeaderboardData, StatusTier, TableSummary, User } from './types';
+import type { LeaderboardData, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
 const EMPTY_LEADERBOARD: LeaderboardData = { leaderboard: [], periodStart: '', lastPrize: null };
 
@@ -95,6 +95,17 @@ export default function App() {
       onBalanceRefresh={refreshUser}
       onUserChange={setUser}
       onEditNickname={() => setEditingNickname(true)}
+      onEnterTournament={(info: TournamentInfo) =>
+        setActiveTable({
+          tableId: 'tournament',
+          smallBlind: info.smallBlind,
+          bigBlind: info.bigBlind,
+          maxSeats: info.maxSeats,
+          minBuyIn: info.buyIn,
+          maxBuyIn: info.buyIn,
+          seatedCount: info.maxSeats,
+        })
+      }
     />
   );
 }
