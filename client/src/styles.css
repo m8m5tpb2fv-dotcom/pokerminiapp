@@ -583,6 +583,36 @@ button:disabled {
   margin-top: 16px;
 }
 
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.profile-stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+
+.profile-stat-tile-wide {
+  grid-column: span 2;
+}
+
+.profile-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.profile-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
 .profile-info-list {
   display: flex;
   flex-direction: column;

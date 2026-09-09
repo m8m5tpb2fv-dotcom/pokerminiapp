@@ -100,6 +100,32 @@ export function ProfileTab({ user, statusTiers, onUserChange, onEditNickname }: 
         {error && <div className="toast toast-error">{error}</div>}
       </div>
 
+      <div className="lobby-section-title">Statistics</div>
+      <div className="profile-stats-grid">
+        <div className="profile-stat-tile">
+          <div className="profile-stat-value">{user.handsPlayed}</div>
+          <div className="profile-stat-label">Hands played</div>
+        </div>
+        <div className="profile-stat-tile">
+          <div className="profile-stat-value">{user.handsWon}</div>
+          <div className="profile-stat-label">Hands won</div>
+        </div>
+        <div className="profile-stat-tile">
+          <div className="profile-stat-value">
+            {user.handsPlayed > 0 ? `${((user.handsWon / user.handsPlayed) * 100).toFixed(1)}%` : '—'}
+          </div>
+          <div className="profile-stat-label">Win rate</div>
+        </div>
+        <div className="profile-stat-tile">
+          <div className="profile-stat-value">⭐{user.biggestWin}</div>
+          <div className="profile-stat-label">Biggest win</div>
+        </div>
+        <div className="profile-stat-tile profile-stat-tile-wide">
+          <div className="profile-stat-value">{user.leaderboardPosition ? `#${user.leaderboardPosition}` : '—'}</div>
+          <div className="profile-stat-label">This week's rating</div>
+        </div>
+      </div>
+
       {ownedTiers.length > 0 && (
         <div className="profile-status-switcher">
           <div className="lobby-section-title">Your statuses</div>

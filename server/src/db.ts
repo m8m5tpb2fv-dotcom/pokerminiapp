@@ -67,6 +67,9 @@ if (!existingColumns.has('nickname')) db.exec('ALTER TABLE users ADD COLUMN nick
 if (!existingColumns.has('status_tier')) db.exec('ALTER TABLE users ADD COLUMN status_tier TEXT');
 if (!existingColumns.has('points')) db.exec('ALTER TABLE users ADD COLUMN points INTEGER NOT NULL DEFAULT 0');
 if (!existingColumns.has('rank_tier')) db.exec('ALTER TABLE users ADD COLUMN rank_tier TEXT');
+if (!existingColumns.has('hands_played')) db.exec('ALTER TABLE users ADD COLUMN hands_played INTEGER NOT NULL DEFAULT 0');
+if (!existingColumns.has('hands_won')) db.exec('ALTER TABLE users ADD COLUMN hands_won INTEGER NOT NULL DEFAULT 0');
+if (!existingColumns.has('biggest_win')) db.exec('ALTER TABLE users ADD COLUMN biggest_win INTEGER NOT NULL DEFAULT 0');
 
 export interface UserRow {
   telegram_id: number;
@@ -77,6 +80,9 @@ export interface UserRow {
   stars_balance: number;
   points: number;
   rank_tier: string | null;
+  hands_played: number;
+  hands_won: number;
+  biggest_win: number;
   created_at: string;
 }
 
@@ -133,6 +139,49 @@ export function getOwnedStatusTiers(telegramId: number): string[] {
   return [...owned];
 }
 
+/** Called once per hand for every participant, right after `awardHandPoints`, to feed the Profile stats. */
+export function recordHandResult(telegramId: number, won: boolean, winAmount: number): void {
+  if (won) {
+    db.prepare(
+      'UPDATE users SET hands_played = hands_played + 1, hands_won = hands_won + 1, biggest_win = MAX(biggest_win, ?) WHERE telegram_id = ?'
+    ).run(winAmount, telegramId);
+  } else {
+    db.prepare('UPDATE users SET hands_played = hands_played + 1 WHERE telegram_id = ?').run(telegramId);
+  }
+}
+
+export interface PlayerStats {
+  handsPlayed: number;
+  handsWon: number;
+  biggestWin: number;
+}
+
+export function getPlayerStats(telegramId: number): PlayerStats {
+  const row = db
+    .prepare('SELECT hands_played as handsPlayed, hands_won as handsWon, biggest_win as biggestWin FROM users WHERE telegram_id = ?')
+    .get(telegramId) as PlayerStats | undefined;
+  return row ?? { handsPlayed: 0, handsWon: 0, biggestWin: 0 };
+}
+
+/** This player's 1-based position in the current weekly leaderboard (by net table winnings), or null if they haven't posted a net result this period. */
+export function getLeaderboardPosition(telegramId: number, since: string): number | null {
+  const row = db
+    .prepare(
+      `WITH ranked AS (
+         SELECT t.telegram_id as telegramId,
+                SUM(t.amount) as netWinnings,
+                ROW_NUMBER() OVER (ORDER BY SUM(t.amount) DESC) as rowNum
+         FROM star_transactions t
+         WHERE t.reason IN ('buy_in', 'cash_out') AND t.created_at >= ?
+         GROUP BY t.telegram_id
+         HAVING netWinnings != 0
+       )
+       SELECT rowNum FROM ranked WHERE telegramId = ?`
+    )
+    .get(since, telegramId) as { rowNum: number } | undefined;
+  return row?.rowNum ?? null;
+}
+
 export function getAllRankedTelegramIds(): { telegramId: number; rankTier: string }[] {
   return db.prepare('SELECT telegram_id as telegramId, rank_tier as rankTier FROM users WHERE rank_tier IS NOT NULL').all() as {
     telegramId: number;
@@ -156,9 +205,14 @@ export interface ClientUser {
   points: number;
   rankTier: string | null;
   avatarVersion: number | null;
+  handsPlayed: number;
+  handsWon: number;
+  biggestWin: number;
+  leaderboardPosition: number | null;
 }
 
 export function toClientUser(user: UserRow): ClientUser {
+  const stats = getPlayerStats(user.telegram_id);
   return {
     telegramId: user.telegram_id,
     username: user.username,
@@ -166,6 +220,10 @@ export function toClientUser(user: UserRow): ClientUser {
     nickname: user.nickname,
     statusTier: user.status_tier,
     ownedStatusTiers: getOwnedStatusTiers(user.telegram_id),
+    handsPlayed: stats.handsPlayed,
+    handsWon: stats.handsWon,
+    biggestWin: stats.biggestWin,
+    leaderboardPosition: getLeaderboardPosition(user.telegram_id, getPrizePeriodStart()),
     displayName: displayNameFor(user),
     starsBalance: user.stars_balance,
     points: user.points,

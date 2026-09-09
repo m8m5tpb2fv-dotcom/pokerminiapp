@@ -15,6 +15,10 @@ export interface User {
   points: number;
   rankTier: string | null;
   avatarVersion: number | null;
+  handsPlayed: number;
+  handsWon: number;
+  biggestWin: number;
+  leaderboardPosition: number | null;
 }
 
 export interface StatusTier {
