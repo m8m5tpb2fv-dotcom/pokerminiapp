@@ -19,6 +19,7 @@ export interface User {
   handsWon: number;
   biggestWin: number;
   leaderboardPosition: number | null;
+  isAdmin: boolean;
 }
 
 export interface StatusTier {
@@ -60,6 +61,26 @@ export interface LeaderboardData {
   byTier: Record<string, LeaderboardEntry[]>;
   periodStart: string;
   lastPrize: LastPrize | null;
+}
+
+export interface AdminTournamentInfo {
+  status: 'scheduled' | 'running';
+  nextStartAt: string;
+  registeredCount: number;
+  seats: number;
+  buyIn: number;
+}
+
+export interface AdminDashboard {
+  totalPlayers: number;
+  activePlayersThisWeek: number;
+  totalHandsPlayed: number;
+  weeklyStarsRevenue: number;
+  lifetimeStarsRevenue: number;
+  periodStart: string;
+  botStarsBalance: number | null;
+  topWeekly: LeaderboardEntry[];
+  tournament: AdminTournamentInfo;
 }
 
 export interface TableSummary {

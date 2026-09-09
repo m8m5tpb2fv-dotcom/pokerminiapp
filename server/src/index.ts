@@ -20,6 +20,7 @@ import { attachWebSocketServer } from './ws/gateway.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID ? Number(process.env.ADMIN_TELEGRAM_ID) : null;
 
 if (!BOT_TOKEN) {
   console.warn('[warn] BOT_TOKEN not set - running in DEV mode with debug: initData and no real Stars purchases.');
@@ -42,7 +43,7 @@ app.use('/api', nicknameRouter(BOT_TOKEN));
 app.use('/api', statusesRouter(BOT_TOKEN));
 app.use('/api', tournamentRouter(tableManager, BOT_TOKEN));
 app.use('/api', ranksRouter());
-app.use('/api', adminRouter(BOT_TOKEN));
+app.use('/api', adminRouter(BOT_TOKEN, ADMIN_TELEGRAM_ID));
 app.use('/api', avatarRouter(BOT_TOKEN));
 
 const server = http.createServer(app);

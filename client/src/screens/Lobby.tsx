@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StatusBadge } from '../components/StatusBadge';
 import { TabBar, type LobbyTab } from '../components/TabBar';
+import { AdminTab } from './lobby/AdminTab';
 import { LeaderboardTab } from './lobby/LeaderboardTab';
 import { ProfileTab } from './lobby/ProfileTab';
 import { StatusTab } from './lobby/StatusTab';
@@ -68,9 +69,10 @@ export function Lobby({
         {tab === 'profile' && (
           <ProfileTab user={user} statusTiers={statusTiers} onUserChange={onUserChange} onEditNickname={onEditNickname} />
         )}
+        {tab === 'admin' && user.isAdmin && <AdminTab />}
       </div>
 
-      <TabBar active={tab} onChange={setTab} />
+      <TabBar active={tab} onChange={setTab} showAdmin={user.isAdmin} />
     </div>
   );
 }

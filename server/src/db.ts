@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DB_PATH ?? path.join(__dirname, '..', 'data.sqlite');
+const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID ? Number(process.env.ADMIN_TELEGRAM_ID) : null;
 
 export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
@@ -215,6 +216,7 @@ export interface ClientUser {
   handsWon: number;
   biggestWin: number;
   leaderboardPosition: number | null;
+  isAdmin: boolean;
 }
 
 export function toClientUser(user: UserRow): ClientUser {
@@ -235,6 +237,7 @@ export function toClientUser(user: UserRow): ClientUser {
     points: user.points,
     rankTier: user.rank_tier,
     avatarVersion: getAvatarVersion(user.telegram_id),
+    isAdmin: ADMIN_TELEGRAM_ID !== null && user.telegram_id === ADMIN_TELEGRAM_ID,
   };
 }
 
