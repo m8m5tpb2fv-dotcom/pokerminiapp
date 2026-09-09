@@ -110,7 +110,7 @@ export async function sendGift(
   });
 }
 
-/** Sends a plain text chat message from the bot to a user (requires the user to have started a chat with the bot). */
-export async function sendMessage(botToken: string, chatId: number, text: string): Promise<void> {
-  await callTelegramApi(botToken, 'sendMessage', { chat_id: chatId, text });
+/** Sends a chat message from the bot to a user or group (the bot must be a member of a group chat to post there). */
+export async function sendMessage(botToken: string, chatId: number, text: string, parseMode?: 'HTML' | 'MarkdownV2'): Promise<void> {
+  await callTelegramApi(botToken, 'sendMessage', { chat_id: chatId, text, parse_mode: parseMode });
 }

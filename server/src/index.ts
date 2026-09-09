@@ -21,6 +21,8 @@ import { attachWebSocketServer } from './ws/gateway.js';
 const PORT = Number(process.env.PORT ?? 8080);
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID ? Number(process.env.ADMIN_TELEGRAM_ID) : null;
+/** Telegram group chat where the daily tournament winner is announced. The bot must be a member of that group. */
+const ANNOUNCE_CHAT_ID = process.env.ANNOUNCE_CHAT_ID ? Number(process.env.ANNOUNCE_CHAT_ID) : null;
 
 if (!BOT_TOKEN) {
   console.warn('[warn] BOT_TOKEN not set - running in DEV mode with debug: initData and no real Stars purchases.');
@@ -54,4 +56,4 @@ server.listen(PORT, () => {
 });
 
 startPrizeScheduler(BOT_TOKEN);
-startTournamentScheduler(tableManager, BOT_TOKEN);
+startTournamentScheduler(tableManager, BOT_TOKEN, ANNOUNCE_CHAT_ID);
