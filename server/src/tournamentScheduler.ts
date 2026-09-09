@@ -1,5 +1,5 @@
-import { adjustBalance, getAvatarVersion } from './db.js';
-import { pickGiftBundleWithinBudget } from './prizeScheduler.js';
+import { adjustBalance, getAvatarVersion, getOrCreateUser } from './db.js';
+import { pickGiftBundleWithinBudget, type GiftPick } from './prizeScheduler.js';
 import type { TableManager } from './tableManager.js';
 import { getAvailableGifts, getMyStarBalance, sendGift, sendMessage } from './telegram.js';
 import {
@@ -54,6 +54,44 @@ function notifyPlayers(botToken: string | undefined, telegramIds: number[], text
   }
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Posts a nicely formatted result card to the configured group chat, if any (never required for the tournament itself to work). */
+async function announceTournamentWinner(
+  botToken: string | undefined,
+  announceChatId: number | null | undefined,
+  winnerTelegramId: number,
+  winnerDisplayName: string,
+  prizePool: number,
+  players: number,
+  bundle: { picks: GiftPick[]; totalSpent: number } | null
+): Promise<void> {
+  if (!botToken || !announceChatId) return;
+
+  const username = getOrCreateUser(winnerTelegramId).username;
+  const winnerLabel = username ? `@${escapeHtml(username)}` : `<b>${escapeHtml(winnerDisplayName)}</b>`;
+
+  const lines = [
+    '🏆 <b>Турнир Stars Poker завершён!</b>',
+    '',
+    `Победитель: ${winnerLabel}`,
+    `Призовой фонд: ⭐${prizePool} (${players} игроков)`,
+  ];
+  if (bundle) {
+    const emojis = bundle.picks.map((p) => p.gift.sticker?.emoji ?? '🎁').join(' ');
+    lines.push(`Награда: ${emojis} на сумму ⭐${bundle.totalSpent}`);
+  }
+  lines.push('', 'Поздравляем! 🎉');
+
+  try {
+    await sendMessage(botToken, announceChatId, lines.join('\n'), 'HTML');
+  } catch (err) {
+    console.error('[tournament] Failed to post the winner announcement:', (err as Error).message);
+  }
+}
+
 export function startTournament(tableManager: TableManager, botToken?: string): void {
   const entries = listEntries();
   const table = tableManager.getTable(TOURNAMENT_TABLE_ID);
@@ -86,7 +124,11 @@ export function startTournament(tableManager: TableManager, botToken?: string): 
   );
 }
 
-export async function finishTournament(tableManager: TableManager, botToken: string | undefined): Promise<void> {
+export async function finishTournament(
+  tableManager: TableManager,
+  botToken: string | undefined,
+  announceChatId?: number | null
+): Promise<void> {
   const table = tableManager.getTable(TOURNAMENT_TABLE_ID);
   if (!table) return;
   const view = table.getView();
@@ -111,41 +153,37 @@ export async function finishTournament(tableManager: TableManager, botToken: str
   const minTarget = Math.floor(prizePool * PRIZE_SHARE_MIN);
   const maxTarget = Math.floor(prizePool * PRIZE_SHARE_MAX);
   const base = { telegramId: winnerSeat.telegramId, displayName: winnerSeat.displayName, prizePool, players: totalSeats };
-  if (!botToken || maxTarget <= 0) {
-    recordTournamentResult({ ...base, giftId: null, starCount: null });
-    return;
+
+  let bundle: { picks: GiftPick[]; totalSpent: number } | null = null;
+  if (botToken && maxTarget > 0) {
+    try {
+      const [balance, gifts] = await Promise.all([getMyStarBalance(botToken), getAvailableGifts(botToken)]);
+      const spendable = Math.min(maxTarget, balance - RESERVE_STARS);
+      bundle = pickGiftBundleWithinBudget(gifts, spendable);
+      if (!bundle) {
+        console.warn(`[tournament] No gift affordable for the winner (target ${minTarget}-${maxTarget}⭐, bot balance ${balance}⭐).`);
+      } else {
+        for (const pick of bundle.picks) {
+          await sendGift(botToken, {
+            userId: winnerSeat.telegramId,
+            giftId: pick.gift.id,
+            payForUpgrade: pick.payForUpgrade,
+            text: `🏆 You won the daily Stars Poker tournament! Prize pool: ${prizePool}⭐`,
+          });
+        }
+        console.log(`[tournament] Awarded ${bundle.picks.length} gift(s) worth ${bundle.totalSpent}⭐ to ${winnerSeat.displayName} (${winnerSeat.telegramId}).`);
+      }
+    } catch (err) {
+      console.error('[tournament] Failed to send the winner gift:', (err as Error).message);
+      bundle = null;
+    }
   }
 
-  try {
-    const [balance, gifts] = await Promise.all([getMyStarBalance(botToken), getAvailableGifts(botToken)]);
-    const spendable = Math.min(maxTarget, balance - RESERVE_STARS);
-    const bundle = pickGiftBundleWithinBudget(gifts, spendable);
-    if (!bundle) {
-      console.warn(`[tournament] No gift affordable for the winner (target ${minTarget}-${maxTarget}⭐, bot balance ${balance}⭐).`);
-      recordTournamentResult({ ...base, giftId: null, starCount: null });
-      return;
-    }
-    for (const pick of bundle.picks) {
-      await sendGift(botToken, {
-        userId: winnerSeat.telegramId,
-        giftId: pick.gift.id,
-        payForUpgrade: pick.payForUpgrade,
-        text: `🏆 You won the daily Stars Poker tournament! Prize pool: ${prizePool}⭐`,
-      });
-    }
-    recordTournamentResult({
-      ...base,
-      giftId: bundle.picks[0].gift.id,
-      starCount: bundle.totalSpent,
-    });
-    console.log(`[tournament] Awarded ${bundle.picks.length} gift(s) worth ${bundle.totalSpent}⭐ to ${winnerSeat.displayName} (${winnerSeat.telegramId}).`);
-  } catch (err) {
-    console.error('[tournament] Failed to send the winner gift:', (err as Error).message);
-    recordTournamentResult({ ...base, giftId: null, starCount: null });
-  }
+  recordTournamentResult({ ...base, giftId: bundle?.picks[0]?.gift.id ?? null, starCount: bundle?.totalSpent ?? null });
+  await announceTournamentWinner(botToken, announceChatId, winnerSeat.telegramId, winnerSeat.displayName, prizePool, totalSeats, bundle);
 }
 
-async function tick(tableManager: TableManager, botToken: string | undefined): Promise<void> {
+async function tick(tableManager: TableManager, botToken: string | undefined, announceChatId: number | null | undefined): Promise<void> {
   const state = getTournamentState();
   if (state.status === 'scheduled') {
     const startsAt = new Date(`${state.nextStartAt.replace(' ', 'T')}Z`).getTime();
@@ -160,10 +198,10 @@ async function tick(tableManager: TableManager, botToken: string | undefined): P
   if (view.seats.length === 0) return; // already finalized, waiting for next cycle
   const alive = view.seats.filter((s) => s.stack > 0);
   if (alive.length > 1) return; // still playing
-  await finishTournament(tableManager, botToken);
+  await finishTournament(tableManager, botToken, announceChatId);
 }
 
-export function startTournamentScheduler(tableManager: TableManager, botToken: string | undefined): void {
-  tick(tableManager, botToken);
-  setInterval(() => tick(tableManager, botToken), CHECK_INTERVAL_MS);
+export function startTournamentScheduler(tableManager: TableManager, botToken: string | undefined, announceChatId?: number | null): void {
+  tick(tableManager, botToken, announceChatId);
+  setInterval(() => tick(tableManager, botToken, announceChatId), CHECK_INTERVAL_MS);
 }

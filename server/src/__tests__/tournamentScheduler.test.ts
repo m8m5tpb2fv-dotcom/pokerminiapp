@@ -242,4 +242,50 @@ describe('finishTournament', () => {
     expect(telegram.sendGift).toHaveBeenNthCalledWith(2, 'fake-token', expect.objectContaining({ userId: 70, giftId: 'b' }));
     expect(tdb.getLastTournamentResult()).toMatchObject({ telegramId: 70, giftId: 'a', starCount: 100, prizePool: 200, players: 4 });
   });
+
+  it('posts a formatted winner announcement to the group chat when an announce chat id is configured', async () => {
+    db.getOrCreateUser(90, 'champion');
+    const fakeTable = {
+      getView: () => ({
+        seats: [
+          { telegramId: 90, displayName: 'champion', stack: 300, status: 'active' },
+          { telegramId: 91, displayName: 'runnerup', stack: 0, status: 'sitting_out' },
+        ],
+      }),
+      standUp: vi.fn((telegramId: number) => (telegramId === 90 ? 300 : 0)),
+    };
+    const fakeTableManager = { getTable: () => fakeTable, markUnseated: vi.fn(), broadcast: vi.fn() } as unknown as Parameters<typeof scheduler.finishTournament>[0];
+
+    vi.mocked(telegram.getMyStarBalance).mockResolvedValue(1000);
+    vi.mocked(telegram.getAvailableGifts).mockResolvedValue([{ id: 'g', star_count: 50, sticker: { emoji: '🎁' } }]);
+    vi.mocked(telegram.sendGift).mockResolvedValue(undefined);
+    vi.mocked(telegram.sendMessage).mockClear();
+    vi.mocked(telegram.sendMessage).mockResolvedValue(undefined);
+
+    await scheduler.finishTournament(fakeTableManager, 'fake-token', -1009999);
+
+    const announceCall = vi.mocked(telegram.sendMessage).mock.calls.find((call) => call[1] === -1009999);
+    expect(announceCall).toBeTruthy();
+    expect(announceCall![2]).toContain('@champion');
+    expect(announceCall![2]).toContain('🎁');
+    expect(announceCall![2]).toContain('⭐50');
+    expect(announceCall![3]).toBe('HTML');
+  });
+
+  it('does not post a group announcement when no announce chat id is configured', async () => {
+    makePlayer(95, 'soloChamp');
+    const fakeTable = {
+      getView: () => ({ seats: [{ telegramId: 95, displayName: 'soloChamp', stack: 100, status: 'active' }] }),
+      standUp: vi.fn(() => 100),
+    };
+    const fakeTableManager = { getTable: () => fakeTable, markUnseated: vi.fn(), broadcast: vi.fn() } as unknown as Parameters<typeof scheduler.finishTournament>[0];
+
+    vi.mocked(telegram.getMyStarBalance).mockResolvedValue(5);
+    vi.mocked(telegram.getAvailableGifts).mockResolvedValue([]);
+    vi.mocked(telegram.sendMessage).mockClear();
+
+    await scheduler.finishTournament(fakeTableManager, 'fake-token');
+
+    expect(telegram.sendMessage).not.toHaveBeenCalled();
+  });
 });
