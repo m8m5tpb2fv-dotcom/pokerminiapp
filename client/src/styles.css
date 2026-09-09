@@ -831,6 +831,33 @@ button:disabled {
   color: var(--danger);
 }
 
+.toast-success {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--success);
+}
+
+.admin-form-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.admin-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
 /* Table screen */
 .table-screen {
   display: flex;

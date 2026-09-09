@@ -1,6 +1,6 @@
 import { SERVER_URL } from './config';
 import { getInitData } from './telegram';
-import type { LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from './types';
+import type { AdminDashboard, LeaderboardData, RankTier, StatusTier, TableSummary, TournamentInfo, User } from './types';
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${SERVER_URL}/api${path}`, {
@@ -76,4 +76,16 @@ export async function fetchRankTiers(): Promise<RankTier[]> {
 export async function uploadAvatar(image: string): Promise<User> {
   const { user } = await post<{ user: User }>('/avatar', { initData: getInitData(), image });
   return user;
+}
+
+/** 403s for anyone whose Telegram id isn't the server's configured ADMIN_TELEGRAM_ID. */
+export async function fetchAdminDashboard(): Promise<AdminDashboard> {
+  const res = await fetch(`${SERVER_URL}/api/admin/app-dashboard?initData=${encodeURIComponent(getInitData())}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? `Request failed: ${res.status}`);
+  return data as AdminDashboard;
+}
+
+export async function adminAdjustBalance(telegramId: number, amount: number, reason: string): Promise<User> {
+  return post<User>('/admin/app-adjust-balance', { initData: getInitData(), telegramId, amount, reason });
 }
