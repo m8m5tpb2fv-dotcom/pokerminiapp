@@ -32,6 +32,7 @@ describe('recordHandStats / getPlayerStats', () => {
 
     expect(db.getPlayerStats(1)).toEqual({ handsPlayed: 3, handsWon: 2, biggestWin: 300 });
     expect(db.getPlayerStats(2)).toEqual({ handsPlayed: 3, handsWon: 1, biggestWin: 40 });
+    expect(db.getGlobalHandsPlayed()).toBe(3); // once per hand, not once per participant
   });
 
   it('returns zeroed stats for a player who has never played a hand', () => {

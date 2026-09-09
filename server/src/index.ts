@@ -2,6 +2,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import http from 'node:http';
+import { ADMIN_PAGE_HTML } from './adminPage.js';
 import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { avatarRouter } from './routes/avatar.js';
@@ -31,6 +32,7 @@ app.use(express.json({ limit: '2mb' })); // base64-encoded avatar uploads need m
 const tableManager = new TableManager();
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/admin', (_req, res) => res.type('html').send(ADMIN_PAGE_HTML));
 app.use('/api', authRouter(BOT_TOKEN));
 app.use('/api', starsRouter(BOT_TOKEN));
 app.use('/api', telegramWebhookRouter(BOT_TOKEN));
