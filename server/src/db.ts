@@ -57,9 +57,15 @@ db.exec(`
     mime TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS game_stats (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    hands_played INTEGER NOT NULL DEFAULT 0
+  );
 `);
 
 db.prepare('INSERT OR IGNORE INTO prize_state (id, period_start) VALUES (1, datetime(\'now\'))').run();
+db.prepare('INSERT OR IGNORE INTO game_stats (id, hands_played) VALUES (1, 0)').run();
 
 // Lightweight migration for databases created before nickname/status_tier/points/rank_tier existed.
 const existingColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
@@ -330,6 +336,40 @@ export function getRevenueSince(since: string): number {
     .prepare("SELECT COALESCE(SUM(amount), 0) as total FROM star_transactions WHERE reason = 'stars_purchase' AND created_at >= ?")
     .get(since) as { total: number };
   return row.total;
+}
+
+/** Called once per finished hand (not once per participant) so the admin dashboard can show a global hand count. */
+export function incrementGlobalHandsPlayed(): void {
+  db.prepare('UPDATE game_stats SET hands_played = hands_played + 1 WHERE id = 1').run();
+}
+
+export function getGlobalHandsPlayed(): number {
+  const row = db.prepare('SELECT hands_played FROM game_stats WHERE id = 1').get() as { hands_played: number };
+  return row.hands_played;
+}
+
+export interface AdminStats {
+  totalPlayers: number;
+  activePlayersThisWeek: number;
+  totalHandsPlayed: number;
+  weeklyStarsRevenue: number;
+  lifetimeStarsRevenue: number;
+}
+
+export function getAdminStats(periodStart: string): AdminStats {
+  const totalPlayers = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
+  const activePlayersThisWeek = (
+    db.prepare('SELECT COUNT(DISTINCT telegram_id) as c FROM star_transactions WHERE created_at >= ?').get(periodStart) as {
+      c: number;
+    }
+  ).c;
+  return {
+    totalPlayers,
+    activePlayersThisWeek,
+    totalHandsPlayed: getGlobalHandsPlayed(),
+    weeklyStarsRevenue: getRevenueSince(periodStart),
+    lifetimeStarsRevenue: getRevenueSince('0000-00-00'),
+  };
 }
 
 export interface PrizeHistoryEntry {
