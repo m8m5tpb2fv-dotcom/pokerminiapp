@@ -172,7 +172,7 @@ describe('Table onHandComplete hook', () => {
     expect(onHandComplete).toHaveBeenCalledTimes(1);
     const [participants, winners] = onHandComplete.mock.calls[0];
     expect(participants.slice().sort()).toEqual([1, 2]);
-    expect(winners).toEqual([2]);
+    expect(winners).toEqual([{ telegramId: 2, amount: expect.any(Number) }]);
     vi.useRealTimers();
   });
 });

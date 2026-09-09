@@ -54,13 +54,13 @@ export class Table {
   private winners: TableStateView['winners'] = null;
   private handParticipants: number[] = [];
   private onChange: () => void;
-  private onHandComplete: (participantIds: number[], winnerIds: number[]) => void;
+  private onHandComplete: (participantIds: number[], winners: { telegramId: number; amount: number }[]) => void;
   private rng: () => number;
 
   constructor(
     config: TableConfig,
     onChange: () => void = () => {},
-    onHandComplete: (participantIds: number[], winnerIds: number[]) => void = () => {},
+    onHandComplete: (participantIds: number[], winners: { telegramId: number; amount: number }[]) => void = () => {},
     rng: () => number = Math.random
   ) {
     this.config = config;
@@ -415,7 +415,7 @@ export class Table {
   private finishHand(): void {
     this.handInProgress = false;
     this.toActSeatIndex = null;
-    this.onHandComplete(this.handParticipants, (this.winners ?? []).map((w) => w.telegramId));
+    this.onHandComplete(this.handParticipants, this.winners ?? []);
     this.onChange();
     for (const seat of [...this.seats.values()]) {
       if (seat.stack <= 0) {

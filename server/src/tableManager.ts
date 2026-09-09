@@ -1,3 +1,4 @@
+import { recordHandStats } from './handStats.js';
 import { Table } from './poker/Table.js';
 import type { TableConfig } from './poker/types.js';
 import { awardHandPoints } from './ranking.js';
@@ -46,9 +47,10 @@ export class TableManager {
 
   constructor() {
     for (const config of [...TABLE_CONFIGS, TOURNAMENT_CONFIG]) {
-      const table = new Table(config, () => this.notify(config.tableId), (participants, winners) =>
-        awardHandPoints(participants, winners)
-      );
+      const table = new Table(config, () => this.notify(config.tableId), (participants, winners) => {
+        awardHandPoints(participants, winners.map((w) => w.telegramId));
+        recordHandStats(participants, winners);
+      });
       this.tables.set(config.tableId, table);
     }
   }
